@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj" />
+  <Project Path="BtwDocumentDesigner.Application/BtwDocumentDesigner.Application.csproj" />
+  <Project Path="BtwDocumentDesigner.Domain/BtwDocumentDesigner.Domain.csproj" />
+  <Project Path="BtwDocumentDesigner.Infrastructure/BtwDocumentDesigner.Infrastructure.csproj" />
+  <Project Path="BtwDocumentDesigner.Shared/BtwDocumentDesigner.Shared.csproj" />
+  <Project Path="BtwDocumentDesigner.Tests/BtwDocumentDesigner.Tests.csproj" />
+</Solution>
