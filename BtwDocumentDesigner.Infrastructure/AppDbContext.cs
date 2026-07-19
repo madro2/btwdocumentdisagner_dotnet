@@ -1,3 +1,6 @@
+using BtwDocumentDesigner.Domain;
+using Microsoft.EntityFrameworkCore;
+
 namespace BtwDocumentDesigner.Infrastructure
 {
     public class AppDbContext : DbContext
@@ -10,11 +13,19 @@ namespace BtwDocumentDesigner.Infrastructure
         public DbSet<PdfDesignImage> PdfDesignImages => Set<PdfDesignImage>();
         public DbSet<DataSourceCollection> DataSourceCollections => Set<DataSourceCollection>();
         public DbSet<DataSourceField> DataSourceFields => Set<DataSourceField>();
+        public DbSet<SystemDefaultValue> SystemDefaultValues => Set<SystemDefaultValue>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             
+            modelBuilder.Entity<SystemDefaultValue>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Key).IsUnique();
+                entity.Property(e => e.Key).HasMaxLength(180);
+            });
+
             modelBuilder.Entity<PdfDesignTemplate>(entity =>
             {
                 entity.HasKey(e => e.Id);

@@ -10,7 +10,10 @@ public sealed class PdfRenderingEngineTests
     public async Task GeneratePdfAsync_RendersTextWithCrossPlatformFont()
     {
         var images = new Mock<IImageRepository>();
-        var engine = new PdfRenderingEngine(images.Object);
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync())
+            .ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
         const string design = """
             {
               "page": {

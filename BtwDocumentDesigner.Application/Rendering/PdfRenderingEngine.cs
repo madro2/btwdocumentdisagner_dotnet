@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using BtwDocumentDesigner.Application.Interfaces;
 using PdfSharp.Drawing.Layout;
 
 namespace BtwDocumentDesigner.Application.Rendering
@@ -13,10 +14,14 @@ namespace BtwDocumentDesigner.Application.Rendering
             new(@"\{\{(.+?)\}\}", RegexOptions.Compiled);
 
         private readonly IImageRepository _imageRepository;
+        private readonly ISystemDefaultValueRepository _systemDefaultValueRepository;
 
-        public PdfRenderingEngine(IImageRepository imageRepository)
+        public PdfRenderingEngine(
+            IImageRepository imageRepository,
+            ISystemDefaultValueRepository systemDefaultValueRepository)
         {
             _imageRepository = imageRepository;
+            _systemDefaultValueRepository = systemDefaultValueRepository;
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             if (PdfSharp.Fonts.GlobalFontSettings.FontResolver == null)
@@ -40,7 +45,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 options)
                 ?? throw new InvalidOperationException(
                     "Diseño JSON inválido.");
-            var context = BindingContext.Create(payload, contentType);
+
+            var systemDefaults = await _systemDefaultValueRepository.GetAllAsync();
+            var context = BindingContext.Create(payload, contentType, systemDefaults);
 
             using var document = new PdfDocument();
             var page = AddPage(document, schema.Page);
@@ -864,7 +871,7 @@ namespace BtwDocumentDesigner.Application.Rendering
         {
             private readonly XDocument? _xml;
             private readonly JToken? _json;
-            private readonly Dictionary<string, object?> _runtime;
+            private readonly Dictionary<string, object?> _system;
             private readonly Dictionary<string, object?> _aliases;
             private readonly int _page;
             private readonly int _totalPages;
@@ -874,7 +881,7 @@ namespace BtwDocumentDesigner.Application.Rendering
             private BindingContext(
                 XDocument? xml,
                 JToken? json,
-                Dictionary<string, object?> runtime,
+                Dictionary<string, object?> system,
                 Dictionary<string, object?>? aliases = null,
                 int page = 1,
                 int totalPages = 1,
@@ -883,7 +890,7 @@ namespace BtwDocumentDesigner.Application.Rendering
             {
                 _xml = xml;
                 _json = json;
-                _runtime = runtime;
+                _system = system;
                 _aliases = aliases ?? new(StringComparer.OrdinalIgnoreCase);
                 _page = page;
                 _totalPages = totalPages;
@@ -891,16 +898,27 @@ namespace BtwDocumentDesigner.Application.Rendering
                 _iterationIndex = iterationIndex;
             }
 
-            public static BindingContext Create(string payload, string contentType)
+            public static BindingContext Create(string payload, string contentType, Dictionary<string, string> systemDefaults)
             {
-                var runtime = new Dictionary<string, object?>(
-                    StringComparer.OrdinalIgnoreCase)
+                var system = new Dictionary<string, object?>(
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var pair in systemDefaults)
                 {
-                    ["CurrentDateTime"] = DateTimeOffset.Now,
-                    ["CurrentYear"] = DateTime.Now.Year,
-                    ["Cufe"] = string.Empty,
-                    ["QrImage"] = string.Empty
-                };
+                    system[pair.Key] = pair.Value;
+                }
+
+                if (!system.ContainsKey("CurrentDateTime"))
+                {
+                    system["CurrentDateTime"] = DateTimeOffset.Now;
+                }
+                if (!system.ContainsKey("CurrentYear"))
+                {
+                    system["CurrentYear"] = DateTime.Now.Year;
+                }
+
+                JToken? jsonResult = null;
+                XDocument? xmlResult = null;
 
                 if (
                     contentType.Contains("json", StringComparison.OrdinalIgnoreCase)
@@ -908,58 +926,64 @@ namespace BtwDocumentDesigner.Application.Rendering
                 )
                 {
                     var parsed = JToken.Parse(payload);
-                    if (
-                        parsed["runtime"] is JObject runtimeObject
-                        && parsed["data"] is { } data
-                    )
+                    var systemToken = parsed["System"] ?? parsed["system"];
+                    if (systemToken is JObject systemObject)
                     {
-                        foreach (var property in runtimeObject.Properties())
+                        foreach (var property in systemObject.Properties())
                         {
-                            runtime[property.Name] =
+                            system[property.Name] =
                                 property.Value.Type == JTokenType.String
                                     ? property.Value.Value<string>()
                                     : property.Value;
                         }
-
-                        if (
-                            data.Type == JTokenType.String
-                            && data.Value<string>()?.TrimStart().StartsWith('<') == true
-                        )
-                        {
-                            return new BindingContext(
-                                XDocument.Parse(data.Value<string>()!),
-                                null,
-                                runtime);
-                        }
-
-                        return new BindingContext(null, data, runtime);
                     }
 
-                    return new BindingContext(null, parsed, runtime);
+                    var dataToken = parsed["data"] ?? parsed;
+                    if (
+                        dataToken.Type == JTokenType.String
+                        && dataToken.Value<string>()?.TrimStart().StartsWith('<') == true
+                    )
+                    {
+                        xmlResult = XDocument.Parse(dataToken.Value<string>()!);
+                    }
+                    else
+                    {
+                        jsonResult = dataToken;
+                    }
                 }
-
-                if (
+                else if (
                     contentType.Contains("xml", StringComparison.OrdinalIgnoreCase)
                     || payload.TrimStart().StartsWith('<')
                 )
                 {
-                    return new BindingContext(
-                        XDocument.Parse(payload),
-                        null,
-                        runtime);
+                    xmlResult = XDocument.Parse(payload);
+                    var root = xmlResult.Root;
+                    if (root != null)
+                    {
+                        var systemElement = root.Elements()
+                            .FirstOrDefault(el => el.Name.LocalName.Equals("System", StringComparison.OrdinalIgnoreCase));
+                        if (systemElement != null)
+                        {
+                            foreach (var element in systemElement.Elements())
+                            {
+                                system[element.Name.LocalName] = element.Value;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    jsonResult = JToken.Parse(payload);
                 }
 
-                return new BindingContext(
-                    null,
-                    JToken.Parse(payload),
-                    runtime);
+                return new BindingContext(xmlResult, jsonResult, system);
             }
 
             public BindingContext WithPage(int page, int totalPages) =>
                 new(
                     _xml,
                     _json,
-                    _runtime,
+                    _system,
                     new(_aliases, StringComparer.OrdinalIgnoreCase),
                     page,
                     totalPages,
@@ -980,7 +1004,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 return new BindingContext(
                     _xml,
                     _json,
-                    _runtime,
+                    _system,
                     aliases,
                     _page,
                     _totalPages,
@@ -992,7 +1016,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 new(
                     _xml,
                     _json,
-                    _runtime,
+                    _system,
                     new(_aliases, StringComparer.OrdinalIgnoreCase),
                     _page,
                     _totalPages,
@@ -1034,10 +1058,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                     return null;
                 }
 
-                if (segments[0].Equals("Runtime", StringComparison.OrdinalIgnoreCase))
+                if (segments[0].Equals("System", StringComparison.OrdinalIgnoreCase))
                 {
                     return segments.Length > 1
-                        ? _runtime.GetValueOrDefault(segments[1])
+                        ? _system.GetValueOrDefault(segments[1])
                         : null;
                 }
 
@@ -1173,7 +1197,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                     "UniqueCodeLabel" => "CUFE:",
                     "AmountInWords" => AmountInWords(
                         ToText(Resolve("InvcHead.DspDocInvoiceAmt"))),
-                    "DianValidationDateTime" => _runtime["CurrentDateTime"],
+                    "DianValidationDateTime" => _system.GetValueOrDefault("CurrentDateTime"),
                     "ProveedorTecnologico.SitioWeb" => "btw.com.co",
                     "RowVatRate" => 0,
                     "RowLotText" => string.Empty,

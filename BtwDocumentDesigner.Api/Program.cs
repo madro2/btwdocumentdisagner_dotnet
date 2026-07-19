@@ -1,3 +1,6 @@
+using BtwDocumentDesigner.Application.Interfaces;
+using BtwDocumentDesigner.Infrastructure.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -37,6 +40,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 // Dependency Injection mappings
 builder.Services.AddScoped<IImageRepository, ImageRepository>();
 builder.Services.AddScoped<IDesignRepository, DesignRepository>();
+builder.Services.AddScoped<ISystemDefaultValueRepository, SystemDefaultValueRepository>();
 builder.Services.AddScoped<PdfRenderingEngine>();
 
 builder.Services.AddScoped<IDesignService, DesignService>();

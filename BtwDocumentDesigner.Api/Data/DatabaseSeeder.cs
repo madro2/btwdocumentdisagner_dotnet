@@ -91,6 +91,40 @@ public static class DatabaseSeeder
         }
 
         await SeedBasicDataSourceAsync(db, basicFieldsPath);
+        await SeedSystemDefaultValuesAsync(db);
+    }
+
+    private static async Task SeedSystemDefaultValuesAsync(AppDbContext db)
+    {
+        var defaultValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "CurrentDateTime", DateTimeOffset.Now.ToString("O") },
+            { "CurrentYear", DateTime.Now.Year.ToString() },
+            { "Cufe", "964e5c464e815616b71f98d41234567890abcdef" },
+            { "QrImage", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" },
+            { "IssuerCheckDigit", "9" },
+            { "BusinessLine", "No responsable de IVA" },
+            { "UniqueCodeLabel", "CUFE:" },
+            { "AmountInWords", "UN MIL PESOS M/CTE" },
+            { "DianValidationDateTime", DateTimeOffset.Now.ToString("O") },
+            { "ProveedorTecnologico.SitioWeb", "btw.com.co" },
+            { "RowVatRate", "0" },
+            { "RowLotText", "" }
+        };
+
+        foreach (var pair in defaultValues)
+        {
+            var exists = await db.SystemDefaultValues.AnyAsync(x => x.Key == pair.Key);
+            if (!exists)
+            {
+                db.SystemDefaultValues.Add(new SystemDefaultValue
+                {
+                    Key = pair.Key,
+                    Value = pair.Value
+                });
+            }
+        }
+        await db.SaveChangesAsync();
     }
 
     internal static async Task SeedBasicDataSourceAsync(
