@@ -21,7 +21,7 @@ namespace BtwDocumentDesigner.Infrastructure.Repositories
         {
             var filePath = Path.Combine(_uploadFolder, $"{image.Id}{Path.GetExtension(image.FileName)}");
             await File.WriteAllBytesAsync(filePath, image.ImageData);
-            
+
             image.ImageData = Array.Empty<byte>(); // Clear before saving to DB to save space
             _db.PdfDesignImages.Add(image);
             await _db.SaveChangesAsync();
@@ -69,7 +69,7 @@ namespace BtwDocumentDesigner.Infrastructure.Repositories
             {
                 File.Delete(filePath);
             }
-            
+
             _db.PdfDesignImages.Remove(image);
             await _db.SaveChangesAsync();
         }
