@@ -12,6 +12,10 @@ namespace BtwDocumentDesigner.Application.Rendering
         public PdfRenderingEngine(IImageRepository imageRepository)
         {
             _imageRepository = imageRepository;
+            if (PdfSharp.Fonts.GlobalFontSettings.FontResolver == null)
+            {
+                PdfSharp.Fonts.GlobalFontSettings.FontResolver = new WindowsFontResolver();
+            }
         }
 
         public async Task<byte[]> GeneratePdfAsync(string jsonConfig, string payload, string contentType)
