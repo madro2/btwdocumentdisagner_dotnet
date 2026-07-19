@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
 
       - name: Publish
-        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -p:UseAppHost=true
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained false -p:UseAppHost=true
 
       - name: Upload build artifact
         if: always()
@@ -57,7 +57,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish
-        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -p:UseAppHost=true
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained false -p:UseAppHost=true
 
       - name: Stop running service
         uses: appleboy/ssh-action@master
