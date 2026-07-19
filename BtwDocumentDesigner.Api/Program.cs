@@ -1,4 +1,6 @@
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
@@ -45,6 +47,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    await BtwDocumentDesigner.Api.Data.DatabaseSeeder.SeedAsync(
+        db,
+        app.Environment);
 }
 
 app.Run();

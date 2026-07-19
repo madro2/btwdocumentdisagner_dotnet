@@ -1,22 +1,25 @@
+using System.Text.Json;
+
 namespace BtwDocumentDesigner.Application.Rendering
 {
-    public class PdfDesignSchema
+    public sealed class PdfDesignSchema
     {
         public string SchemaVersion { get; set; } = string.Empty;
         public PageSettings Page { get; set; } = new();
         public List<PdfComponent> Components { get; set; } = new();
     }
 
-    public class PageSettings
+    public sealed class PageSettings
     {
         public string Size { get; set; } = "A4";
         public string Orientation { get; set; } = "portrait";
-        public double WidthMm { get; set; }
-        public double HeightMm { get; set; }
+        public double WidthMm { get; set; } = 210;
+        public double HeightMm { get; set; } = 297;
+        public string Background { get; set; } = "#FFFFFF";
         public Margins MarginsMm { get; set; } = new();
     }
 
-    public class Margins
+    public sealed class Margins
     {
         public double Top { get; set; }
         public double Right { get; set; }
@@ -24,18 +27,25 @@ namespace BtwDocumentDesigner.Application.Rendering
         public double Left { get; set; }
     }
 
-    public class PdfComponent
+    public sealed class PdfComponent
     {
         public string Id { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // text, image, container
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public Position Position { get; set; } = new();
         public double? RotationDegrees { get; set; }
         public ComponentContent Content { get; set; } = new();
         public ComponentStyle Style { get; set; } = new();
-        public List<PdfComponent> Components { get; set; } = new(); // For containers
+        public ComponentBehavior Behavior { get; set; } = new();
+        public List<PdfComponent> Components { get; set; } = new();
+        public List<TableColumn> Columns { get; set; } = new();
+        public List<TableColumn> OptionalColumns { get; set; } = new();
+        public RowTemplate RowTemplate { get; set; } = new();
+        public AnchorDefinition? Anchor { get; set; }
+        public JsonElement Properties { get; set; }
     }
 
-    public class Position
+    public sealed class Position
     {
         public double X { get; set; }
         public double Y { get; set; }
@@ -44,18 +54,119 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string Unit { get; set; } = "mm";
     }
 
-    public class ComponentContent
+    public sealed class ComponentContent
     {
-        public string Value { get; set; } = string.Empty;
-        public string AssetId { get; set; } = string.Empty; // For images
+        public string? Value { get; set; }
+        public string? DataPath { get; set; }
+        public List<string> DataPaths { get; set; } = new();
+        public string? DefaultValue { get; set; }
+        public string? Source { get; set; }
+        public string? AssetId { get; set; }
+        public string? Fit { get; set; }
+        public string? Mode { get; set; }
+        public string? Format { get; set; }
+        public string? RowAlias { get; set; }
+        public bool ShowRecordCount { get; set; }
+        public string? RecordCountLabel { get; set; }
+        public List<TableRow> Rows { get; set; } = new();
+        public List<TableRow> OptionalRows { get; set; } = new();
+        public List<TableField> Fields { get; set; } = new();
     }
 
-    public class ComponentStyle
+    public sealed class TableRow
+    {
+        public string? Label { get; set; }
+        public string? Value { get; set; }
+        public string? DataPath { get; set; }
+        public string? DefaultValue { get; set; }
+        public string? CollectionPath { get; set; }
+        public string? VisibilityCondition { get; set; }
+    }
+
+    public sealed class TableField
+    {
+        public string Column { get; set; } = string.Empty;
+        public string? Value { get; set; }
+        public string? DataPath { get; set; }
+        public string? DefaultValue { get; set; }
+    }
+
+    public sealed class TableColumn
+    {
+        public string Id { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public double WidthMm { get; set; }
+        public string? Value { get; set; }
+        public string? DataPath { get; set; }
+        public string? DefaultValue { get; set; }
+        public string? Alignment { get; set; }
+        public ComponentStyle Style { get; set; } = new();
+        public FallbackDefinition? Fallback { get; set; }
+    }
+
+    public sealed class FallbackDefinition
+    {
+        public string? DataPath { get; set; }
+    }
+
+    public sealed class RowTemplate
+    {
+        public double MinHeightMm { get; set; } = 6;
+        public double MaxHeightMm { get; set; } = 18;
+    }
+
+    public sealed class AnchorDefinition
+    {
+        public string? Mode { get; set; }
+        public string? ComponentId { get; set; }
+        public double SpacingMm { get; set; }
+    }
+
+    public sealed class ComponentBehavior
+    {
+        public string? Mode { get; set; }
+        public string? RepeatOn { get; set; }
+        public bool RepeatHeader { get; set; }
+        public bool AllowPageBreak { get; set; }
+        public bool GrowVertically { get; set; }
+        public bool MoveFollowingComponents { get; set; }
+        public double HeaderHeightMm { get; set; }
+        public double MinRowHeightMm { get; set; }
+        public double MaxRowHeightMm { get; set; }
+        public double ReservedBottomSpaceMm { get; set; }
+    }
+
+    public sealed class ComponentStyle
     {
         public string FontFamily { get; set; } = "Arial";
         public double FontSizePt { get; set; } = 10;
         public bool Bold { get; set; }
-        public string Alignment { get; set; } = "left"; // left, center, right
+        public bool Underline { get; set; }
+        public string Alignment { get; set; } = "left";
+        public string VerticalAlignment { get; set; } = "top";
         public string Color { get; set; } = "#000000";
+        public string? Background { get; set; }
+        public double Padding { get; set; }
+        public double RowHeightMm { get; set; }
+        public double LineHeight { get; set; } = 1.1;
+        public string? Fit { get; set; }
+        public bool HeaderBold { get; set; }
+        public BorderStyle Border { get; set; } = new();
+        public HeaderStyle Header { get; set; } = new();
+    }
+
+    public sealed class HeaderStyle
+    {
+        public bool Bold { get; set; }
+        public string Alignment { get; set; } = "center";
+        public string? Background { get; set; }
+    }
+
+    public sealed class BorderStyle
+    {
+        public string Color { get; set; } = "#000000";
+        public double WidthPt { get; set; } = 0;
+        public string Style { get; set; } = "none";
+        public double RadiusMm { get; set; }
     }
 }
