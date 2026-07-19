@@ -819,6 +819,7 @@ namespace BtwDocumentDesigner.Application.Rendering
         {
             try
             {
+                value = value.Trim();
                 var comma = value.IndexOf(',');
                 var encoded = value.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
                     ? value[(comma + 1)..]

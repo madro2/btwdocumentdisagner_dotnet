@@ -7,10 +7,10 @@ namespace BtwDocumentDesigner.Infrastructure.Repositories
         private readonly AppDbContext _db;
         private readonly string _uploadFolder;
 
-        public ImageRepository(AppDbContext db)
+        public ImageRepository(AppDbContext db, Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment)
         {
             _db = db;
-            _uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            _uploadFolder = Path.Combine(environment.ContentRootPath, "wwwroot", "uploads");
             if (!Directory.Exists(_uploadFolder))
             {
                 Directory.CreateDirectory(_uploadFolder);
