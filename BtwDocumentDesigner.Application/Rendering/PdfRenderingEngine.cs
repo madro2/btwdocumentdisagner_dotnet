@@ -70,7 +70,8 @@ namespace BtwDocumentDesigner.Application.Rendering
                 {
                     string text = ResolveDataBinding(comp.Content.Value, xmlData, jsonData);
                     var fontStyle = comp.Style.Bold ? XFontStyleEx.Bold : XFontStyleEx.Regular;
-                    var font = new XFont(comp.Style.FontFamily, comp.Style.FontSizePt, fontStyle);
+                    var fontOptions = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode);
+                    var font = new XFont(comp.Style.FontFamily, comp.Style.FontSizePt, fontStyle, fontOptions);
                     var brush = new XSolidBrush(ParseColor(comp.Style.Color));
                     var format = new XStringFormat();
                     
