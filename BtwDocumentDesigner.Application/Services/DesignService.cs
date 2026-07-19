@@ -57,6 +57,11 @@ namespace BtwDocumentDesigner.Application.Services
             var design = await _designRepository.GetByIdAsync(id);
             if (design == null) return false;
 
+            if (design.DesignVersion == 1)
+            {
+                throw new InvalidOperationException("No se permite eliminar la versión 1 (base) de una plantilla.");
+            }
+
             await _designRepository.DeleteAsync(design);
             return true;
         }
