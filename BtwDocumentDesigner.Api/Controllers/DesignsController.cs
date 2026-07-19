@@ -11,7 +11,7 @@ namespace BtwDocumentDesigner.Api.Controllers
             _designService = designService;
         }
 
-        [SwaggerOperation(Summary = "Crea un nuevo diseño", Description = "Registra un nuevo template de diseño de PDF en el sistema.")]
+        [SwaggerOperation(Summary = "Crear una plantilla", Description = "Guarda una nueva plantilla para generar documentos PDF.")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PdfDesignTemplate design)
         {
@@ -34,14 +34,14 @@ namespace BtwDocumentDesigner.Api.Controllers
             }
         }
 
-        [SwaggerOperation(Summary = "Obtiene todos los diseños", Description = "Devuelve una lista con todos los diseños registrados.")]
+        [SwaggerOperation(Summary = "Consultar plantillas", Description = "Muestra todas las plantillas de documentos disponibles.")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             return Ok(await _designService.GetAllDesignsAsync());
         }
 
-        [SwaggerOperation(Summary = "Obtiene un diseño por ID", Description = "Busca un diseño específico utilizando su identificador único.")]
+        [SwaggerOperation(Summary = "Consultar una plantilla", Description = "Busca una plantilla usando su identificador único.")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -49,15 +49,17 @@ namespace BtwDocumentDesigner.Api.Controllers
             return design != null ? Ok(design) : NotFound("Diseño no encontrado.");
         }
 
-        [SwaggerOperation(Summary = "Busca un diseño por nombre y versión", Description = "Permite consultar un diseño filtrando por su nombre exacto y versión.")]
+        [SwaggerOperation(Summary = "Buscar una plantilla", Description = "Busca una plantilla por su nombre y número de versión.")]
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] string name, [FromQuery] int version)
+        public async Task<IActionResult> Search(
+            [FromQuery, Display(Name = "Nombre de la plantilla")] string name,
+            [FromQuery, Display(Name = "Versión de la plantilla")] int version)
         {
             var design = await _designService.SearchDesignAsync(name, version);
             return design != null ? Ok(new { Id = design.Id }) : NotFound("Diseño no encontrado.");
         }
 
-        [SwaggerOperation(Summary = "Actualiza un diseño existente", Description = "Sobrescribe la configuración de un diseño por su ID.")]
+        [SwaggerOperation(Summary = "Actualizar una plantilla", Description = "Actualiza la información y la configuración de una plantilla existente.")]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] PdfDesignTemplate updateDesign)
         {
@@ -76,7 +78,7 @@ namespace BtwDocumentDesigner.Api.Controllers
             }
         }
 
-        [SwaggerOperation(Summary = "Elimina un diseño", Description = "Borra un diseño del sistema permanentemente por su ID.")]
+        [SwaggerOperation(Summary = "Eliminar una plantilla", Description = "Elimina permanentemente una plantilla del sistema.")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {

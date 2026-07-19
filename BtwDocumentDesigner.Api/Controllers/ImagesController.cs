@@ -11,11 +11,11 @@ namespace BtwDocumentDesigner.Api.Controllers
             _imageService = imageService;
         }
 
-        [SwaggerOperation(Summary = "Sube una imagen", Description = "Permite cargar una nueva imagen (logo, firma, etc) para usar en los PDFs.")]
+        [SwaggerOperation(Summary = "Cargar una imagen", Description = "Guarda una imagen, como un logo o una firma, para usarla en las plantillas PDF.")]
         [HttpPost]
         public async Task<IActionResult> Upload(
-            IFormFile file,
-            [FromQuery] string? resourceKey = null)
+            [Display(Name = "Archivo de imagen")] IFormFile file,
+            [FromQuery, Display(Name = "Clave del recurso")] string? resourceKey = null)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("El archivo de imagen no es válido.");
@@ -32,7 +32,7 @@ namespace BtwDocumentDesigner.Api.Controllers
             return Ok(new { Id = savedImage.Id, savedImage.ResourceKey });
         }
 
-        [SwaggerOperation(Summary = "Obtiene una imagen", Description = "Devuelve el archivo binario de la imagen por su identificador.")]
+        [SwaggerOperation(Summary = "Consultar una imagen", Description = "Descarga una imagen usando su identificador.")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> Get(Guid id)
         {
@@ -42,7 +42,7 @@ namespace BtwDocumentDesigner.Api.Controllers
             return File(image.ImageData, image.ContentType, image.FileName);
         }
 
-        [SwaggerOperation(Summary = "Elimina una imagen", Description = "Borra una imagen permanentemente de la base de datos.")]
+        [SwaggerOperation(Summary = "Eliminar una imagen", Description = "Elimina permanentemente una imagen guardada.")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {

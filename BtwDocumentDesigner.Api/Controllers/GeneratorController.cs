@@ -11,10 +11,13 @@ namespace BtwDocumentDesigner.Api.Controllers
             _generatorService = generatorService;
         }
 
-        [SwaggerOperation(Summary = "Genera un PDF", Description = "Recibe el nombre y versión del diseño, junto con un payload XML/JSON, y devuelve el archivo PDF generado.")]
+        [SwaggerOperation(Summary = "Generar un PDF", Description = "Genera un PDF a partir de una plantilla y los datos de una factura o documento.")]
         [HttpPost("generate")]
         [Consumes("application/xml", "application/json", "text/plain")]
-        public async Task<IActionResult> Generate([FromQuery] string designName, [FromQuery] int version, [FromBody] string payload)
+        public async Task<IActionResult> Generate(
+            [FromQuery, Display(Name = "Nombre de la plantilla")] string designName,
+            [FromQuery, Display(Name = "Versión de la plantilla")] int version,
+            [FromBody, Display(Name = "Datos del documento")] string payload)
         {
             try
             {
@@ -35,8 +38,8 @@ namespace BtwDocumentDesigner.Api.Controllers
         }
 
         [SwaggerOperation(
-            Summary = "Genera un PDF con contrato 3.0",
-            Description = "Recibe payload XML/JSON y parámetros runtime tipados en un único envelope.")]
+            Summary = "Generar un PDF con datos adicionales",
+            Description = "Genera un PDF usando una plantilla, los datos XML o JSON y valores adicionales como CUFE o código QR.")]
         [HttpPost("generate-v3")]
         [Consumes("application/json")]
         public async Task<IActionResult> GenerateV3([FromBody] GeneratePdfRequest request)
@@ -71,10 +74,19 @@ namespace BtwDocumentDesigner.Api.Controllers
 
     public sealed class GeneratePdfRequest
     {
+        [Display(Name = "Nombre de la plantilla", Description = "Nombre de la plantilla que se usará para generar el PDF.")]
         public string DesignName { get; set; } = string.Empty;
+
+        [Display(Name = "Versión de la plantilla", Description = "Número de versión de la plantilla seleccionada.")]
         public int Version { get; set; }
+
+        [Display(Name = "Tipo de datos", Description = "Formato de los datos recibidos: application/xml o application/json.")]
         public string PayloadType { get; set; } = "application/xml";
+
+        [Display(Name = "Datos del documento", Description = "Contenido XML o JSON con la información que aparecerá en el PDF.")]
         public string Payload { get; set; } = string.Empty;
+
+        [Display(Name = "Datos adicionales", Description = "Valores complementarios como CUFE, código QR, fecha de validación o año actual.")]
         public Dictionary<string, System.Text.Json.JsonElement> Runtime { get; set; } = [];
     }
 }
