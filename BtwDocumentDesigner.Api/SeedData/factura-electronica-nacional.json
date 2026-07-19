@@ -1,0 +1,1632 @@
+{
+  "schemaVersion": "2.2",
+  "document": {
+    "id": "btw-electronic-invoice",
+    "name": "BTW electronic invoice",
+    "type": "invoice",
+    "version": 2.2,
+    "description": "Efficient BTW invoice design contract with table-based XML bindings"
+  },
+  "dataSource": {
+    "type": "xml",
+    "allowMissingFields": true,
+    "runtimeParameters": [
+      {
+        "name": "InvoiceType",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "Cufe",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "QrImage",
+        "type": "image",
+        "required": true
+      },
+      {
+        "name": "CurrentDateTime",
+        "type": "datetime",
+        "required": true
+      },
+      {
+        "name": "CurrentYear",
+        "type": "integer",
+        "required": true
+      }
+    ],
+    "tables": [
+      {
+        "name": "Company",
+        "cardinality": "zeroOrOne",
+        "dataPath": "Company"
+      },
+      {
+        "name": "InvcHead",
+        "cardinality": "zeroOrOne",
+        "dataPath": "InvcHead"
+      },
+      {
+        "name": "Customer",
+        "cardinality": "zeroOrOne",
+        "dataPath": "Customer"
+      },
+      {
+        "name": "COOneTime",
+        "cardinality": "zeroOrOne",
+        "dataPath": "COOneTime"
+      },
+      {
+        "name": "InvcDtl",
+        "cardinality": "zeroOrMany",
+        "dataPath": "InvcDtl"
+      },
+      {
+        "name": "SalesTRC",
+        "cardinality": "zeroOrMany",
+        "dataPath": "SalesTRC"
+      },
+      {
+        "name": "DetailTaxScheme",
+        "cardinality": "zeroOrOne",
+        "dataPath": "DetailTaxScheme"
+      },
+      {
+        "name": "Decimals",
+        "cardinality": "zeroOrOne",
+        "dataPath": "Decimals"
+      }
+    ]
+  },
+  "page": {
+    "size": "A4",
+    "orientation": "portrait",
+    "widthMm": 210,
+    "heightMm": 297,
+    "marginsMm": {
+      "top": 7,
+      "right": 7,
+      "bottom": 7,
+      "left": 7
+    },
+    "background": "#FFFFFF"
+  },
+  "resources": [
+    {
+      "id": "company-logo",
+      "type": "image",
+      "name": "Main issuer logo"
+    },
+    {
+      "id": "footer-logo",
+      "type": "image",
+      "name": "Footer logo"
+    }
+  ],
+  "sharedStyles": {
+    "baseText": {
+      "fontFamily": "Arial",
+      "fontSizePt": 7,
+      "color": "#111111",
+      "lineHeight": 1.05
+    },
+    "labelStyle": {
+      "fontFamily": "Arial",
+      "fontSizePt": 7,
+      "bold": true,
+      "color": "#111111"
+    },
+    "sectionBorder": {
+      "color": "#222222",
+      "widthPt": 0.8,
+      "style": "solid",
+      "radiusMm": 1.5
+    }
+  },
+  "components": [
+    {
+      "id": "technology-provider-vertical-label",
+      "name": "Technology provider vertical information",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 34,
+        "width": 5,
+        "height": 158,
+        "unit": "mm"
+      },
+      "rotationDegrees": -90,
+      "content": {
+        "value": "PROVEEDOR TECNOLÓGICO: BTW S.A.S. NIT 900665411 - INFORMACIÓN FACTURACIÓN ERP: {{InvcHead.InfoERP}}",
+        "dataPath": "InvcHead.InfoERP"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSizePt": 6,
+        "alignment": "center",
+        "color": "#111111"
+      }
+    },
+    {
+      "id": "main-header",
+      "name": "Main header",
+      "type": "container",
+      "required": true,
+      "position": {
+        "x": 5,
+        "y": 0,
+        "width": 191,
+        "height": 34,
+        "unit": "mm"
+      },
+      "behavior": {
+        "mode": "fixed",
+        "repeatOn": "firstPage",
+        "allowOverflow": false
+      },
+      "style": {
+        "background": "#FFFFFF",
+        "padding": 0,
+        "border": {
+          "style": "none",
+          "widthPt": 0
+        }
+      },
+      "components": [
+        {
+          "id": "header-logo",
+          "name": "Issuer logo",
+          "type": "image",
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 37,
+            "height": 20,
+            "unit": "mm"
+          },
+          "content": {
+            "source": "asset",
+            "assetId": "logo-empresa",
+            "fit": "contain"
+          }
+        },
+        {
+          "id": "issuer-header",
+          "name": "Issuer data",
+          "type": "container",
+          "position": {
+            "x": 39,
+            "y": 2,
+            "width": 65,
+            "height": 28,
+            "unit": "mm"
+          },
+          "style": {
+            "padding": 0
+          },
+          "components": [
+            {
+              "id": "issuer-legal-name",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 0,
+                "width": 65,
+                "height": 4,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{Company.Name}}",
+                "dataPath": "Company.Name"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 8,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "issuer-tax-id",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 4,
+                "width": 65,
+                "height": 4,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "NIT. {{Company.StateTaxID}} - {{Pending.IssuerCheckDigit}}",
+                "dataPaths": [
+                  "Company.StateTaxID",
+                  "Pending.IssuerCheckDigit"
+                ]
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "issuer-address",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 8,
+                "width": 65,
+                "height": 5,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{Company.Address1}}",
+                "dataPath": "Company.Address1"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "issuer-phone",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 13,
+                "width": 65,
+                "height": 4,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{Company.PhoneNum}}",
+                "dataPath": "Company.PhoneNum"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "issuer-city",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 17,
+                "width": 65,
+                "height": 4,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{Company.City}} - {{Company.State}}",
+                "dataPaths": [
+                  "Company.City",
+                  "Company.State"
+                ]
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "issuer-tax-responsibility",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 21,
+                "width": 65,
+                "height": 5,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{Company.FiscalResposabilityDesc}}\n{{Pending.BusinessLine}}",
+                "dataPaths": [
+                  "Company.FiscalResposabilityDesc",
+                  "Pending.BusinessLine"
+                ]
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "header-qr-code",
+          "name": "Invoice QR code",
+          "type": "qrCode",
+          "position": {
+            "x": 109,
+            "y": 5,
+            "width": 22,
+            "height": 22,
+            "unit": "mm"
+          },
+          "content": {
+            "mode": "dynamic",
+            "dataPath": "Runtime.QrImage",
+            "defaultValue": ""
+          },
+          "properties": {
+            "errorCorrectionLevel": "M",
+            "quietZoneModules": 1
+          }
+        },
+        {
+          "id": "invoice-identification-header",
+          "name": "Invoice identification",
+          "type": "container",
+          "position": {
+            "x": 136,
+            "y": 1,
+            "width": 55,
+            "height": 28,
+            "unit": "mm"
+          },
+          "components": [
+            {
+              "id": "invoice-title",
+              "type": "text",
+              "position": {
+                "x": 0,
+                "y": 1,
+                "width": 55,
+                "height": 10,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{InvcHead.TranDocTypeDesc}}",
+                "dataPath": "InvcHead.TranDocTypeDesc"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 10,
+                "bold": true,
+                "alignment": "center",
+                "verticalAlignment": "center"
+              }
+            },
+            {
+              "id": "invoice-number-frame",
+              "type": "rectangle",
+              "position": {
+                "x": 2,
+                "y": 15,
+                "width": 51,
+                "height": 8,
+                "unit": "mm"
+              },
+              "style": {
+                "background": "#FFFFFF",
+                "border": {
+                  "color": "#222222",
+                  "widthPt": 0.8,
+                  "style": "solid",
+                  "radiusMm": 1.5
+                }
+              }
+            },
+            {
+              "id": "invoice-number",
+              "type": "text",
+              "position": {
+                "x": 3,
+                "y": 15.5,
+                "width": 49,
+                "height": 7,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "No. {{InvcHead.LegalNumber}}",
+                "dataPaths": [
+                  "Pending.Factura.Prefijo",
+                  "Pending.Factura.Numero"
+                ],
+                "dataPath": "InvcHead.LegalNumber"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 11,
+                "bold": true,
+                "alignment": "center",
+                "verticalAlignment": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "top-page-number",
+          "type": "pageNumber",
+          "position": {
+            "x": 171,
+            "y": 0,
+            "width": 20,
+            "height": 3,
+            "unit": "mm"
+          },
+          "content": {
+            "format": "Página: {{Pagina.Actual}} de {{Pagina.Total}}"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 5,
+            "alignment": "right"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cufe-block",
+      "name": "CUFE",
+      "type": "container",
+      "position": {
+        "x": 17,
+        "y": 34,
+        "width": 179,
+        "height": 7,
+        "unit": "mm"
+      },
+      "components": [
+        {
+          "id": "cufe-label",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "{{Pending.UniqueCodeLabel}}",
+            "dataPath": "Pending.UniqueCodeLabel"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 8,
+            "bold": true
+          }
+        },
+        {
+          "id": "cufe-value",
+          "type": "text",
+          "position": {
+            "x": 12,
+            "y": 1,
+            "width": 167,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "{{Runtime.Cufe}}",
+            "dataPath": "Runtime.Cufe"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 7,
+            "bold": true,
+            "fit": "shrinkToFit"
+          }
+        }
+      ]
+    },
+    {
+      "id": "customer-resolution-block",
+      "name": "Customer and resolution",
+      "type": "container",
+      "position": {
+        "x": 5,
+        "y": 41,
+        "width": 191,
+        "height": 51,
+        "unit": "mm"
+      },
+      "components": [
+        {
+          "id": "customer-container",
+          "name": "Billed customer",
+          "type": "container",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 94.5,
+            "height": 51,
+            "unit": "mm"
+          },
+          "style": {
+            "padding": 1.5,
+            "border": {
+              "color": "#222222",
+              "widthPt": 0.8,
+              "style": "solid",
+              "radiusMm": 1.5
+            }
+          },
+          "components": [
+            {
+              "id": "customer-title",
+              "type": "text",
+              "position": {
+                "x": 1,
+                "y": 1,
+                "width": 92.5,
+                "height": 5,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "FACTURADO A:"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "bold": true,
+                "alignment": "center"
+              }
+            },
+            {
+              "id": "customer-data",
+              "type": "table",
+              "position": {
+                "x": 1,
+                "y": 7,
+                "width": 92,
+                "height": 42,
+                "unit": "mm"
+              },
+              "content": {
+                "mode": "fixedRows",
+                "rows": [
+                  {
+                    "label": "Razón social:",
+                    "value": "{{Customer.Name}}",
+                    "dataPath": "Customer.Name"
+                  },
+                  {
+                    "label": "Tipo identificación:",
+                    "value": "{{Customer.TypeID}}",
+                    "dataPath": "Customer.TypeID"
+                  },
+                  {
+                    "label": "{{Customer.TypeID}}:",
+                    "value": "{{Customer.ResaleID}}",
+                    "dataPaths": [
+                      "Customer.TypeID",
+                      "Customer.ResaleID"
+                    ]
+                  },
+                  {
+                    "label": "Dirección:",
+                    "value": "{{Customer.Address1}}",
+                    "dataPath": "Customer.Address1"
+                  },
+                  {
+                    "label": "Teléfono:",
+                    "value": "{{Customer.PhoneNum}}",
+                    "dataPath": "Customer.PhoneNum"
+                  },
+                  {
+                    "label": "Ciudad:",
+                    "value": "{{Customer.City}}",
+                    "dataPath": "Customer.City"
+                  },
+                  {
+                    "label": "País:",
+                    "value": "{{Customer.CountryName}}",
+                    "dataPath": "Customer.CountryName"
+                  },
+                  {
+                    "label": "Email:",
+                    "value": "{{Customer.EMailAddress}}",
+                    "dataPath": "Customer.EMailAddress"
+                  }
+                ]
+              },
+              "columns": [
+                {
+                  "id": "label",
+                  "widthMm": 32,
+                  "style": {
+                    "bold": true
+                  }
+                },
+                {
+                  "id": "value",
+                  "widthMm": 60
+                }
+              ],
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "border": {
+                  "style": "none"
+                },
+                "rowHeightMm": 4.6
+              }
+            }
+          ]
+        },
+        {
+          "id": "resolution-container",
+          "name": "Billing resolution",
+          "type": "container",
+          "position": {
+            "x": 96.5,
+            "y": 0,
+            "width": 94.5,
+            "height": 51,
+            "unit": "mm"
+          },
+          "style": {
+            "padding": 3,
+            "border": {
+              "color": "#222222",
+              "widthPt": 0.8,
+              "style": "solid",
+              "radiusMm": 1.5
+            }
+          },
+          "components": [
+            {
+              "id": "resolution-text",
+              "type": "text",
+              "position": {
+                "x": 4,
+                "y": 15,
+                "width": 86.5,
+                "height": 17,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{InvcHead.Legends1}}\n{{InvcHead.Legends2}}\n{{Pending.InvcHead.LegendLegal}}\n{{InvcHead.Resolution1}}",
+                "dataPaths": [
+                  "InvcHead.Legends1",
+                  "InvcHead.Legends2",
+                  "Pending.InvcHead.LegendLegal",
+                  "InvcHead.Resolution1"
+                ]
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 7,
+                "alignment": "center",
+                "verticalAlignment": "center",
+                "lineHeight": 1.05
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "commercial-data",
+      "name": "Commercial data",
+      "type": "table",
+      "position": {
+        "x": 5,
+        "y": 94,
+        "width": 191,
+        "height": 10,
+        "unit": "mm"
+      },
+      "content": {
+        "mode": "record",
+        "fields": [
+          {
+            "column": "vendedor",
+            "value": "{{InvcHead.SalesRepName1}}",
+            "dataPath": "InvcHead.SalesRepName1",
+            "defaultValue": "No aplica"
+          },
+          {
+            "column": "purchaseOrder",
+            "value": "{{InvcHead.PONum}}",
+            "dataPath": "InvcHead.PONum",
+            "defaultValue": "0"
+          },
+          {
+            "column": "salesOrder",
+            "value": "{{InvcHead.OrderNum}}",
+            "dataPath": "InvcHead.OrderNum",
+            "defaultValue": "0"
+          },
+          {
+            "column": "paymentTerms",
+            "value": "{{InvcHead.TermsCodeDescription}}",
+            "dataPath": "InvcHead.TermsCodeDescription"
+          },
+          {
+            "column": "paymentMethod",
+            "value": "{{Customer.PayMethodDescription}}",
+            "dataPath": "Customer.PayMethodDescription"
+          },
+          {
+            "column": "deliveryNote",
+            "value": "{{InvcHead.Remission}}",
+            "dataPath": "InvcHead.Remission",
+            "defaultValue": "0"
+          }
+        ]
+      },
+      "columns": [
+        {
+          "id": "vendedor",
+          "title": "VENDEDOR:",
+          "widthMm": 53
+        },
+        {
+          "id": "purchaseOrder",
+          "title": "O.C. CLIENTE:",
+          "widthMm": 22
+        },
+        {
+          "id": "salesOrder",
+          "title": "ORDEN DE VENTA:",
+          "widthMm": 28
+        },
+        {
+          "id": "paymentTerms",
+          "title": "FORMA DE PAGO:",
+          "widthMm": 31
+        },
+        {
+          "id": "paymentMethod",
+          "title": "MEDIO DE PAGO:",
+          "widthMm": 31
+        },
+        {
+          "id": "deliveryNote",
+          "title": "REMISIÓN:",
+          "widthMm": 26
+        }
+      ],
+      "style": {
+        "fontFamily": "Arial",
+        "fontSizePt": 6.5,
+        "alignment": "center",
+        "headerBold": true,
+        "border": {
+          "color": "#222222",
+          "widthPt": 0.8,
+          "style": "solid",
+          "radiusMm": 1.5
+        }
+      }
+    },
+    {
+      "id": "date-data",
+      "name": "Dates and currency",
+      "type": "table",
+      "position": {
+        "x": 5,
+        "y": 106,
+        "width": 191,
+        "height": 9,
+        "unit": "mm"
+      },
+      "content": {
+        "mode": "record",
+        "fields": [
+          {
+            "column": "invoiceDate",
+            "value": "{{InvcHead.InvoiceDate|date:dd/MM/yyyy hh:mm:ss}}",
+            "dataPath": "InvcHead.InvoiceDate"
+          },
+          {
+            "column": "dueDate",
+            "value": "{{InvcHead.DueDate|date:dd/MM/yyyy hh:mm:ss}}",
+            "dataPath": "InvcHead.DueDate"
+          },
+          {
+            "column": "currency",
+            "value": "{{InvcHead.CurrencyCode}}",
+            "dataPath": "InvcHead.CurrencyCode"
+          },
+          {
+            "column": "erpGenerationDate",
+            "value": "{{InvcHead.InvoiceDate|date:dd/MM/yyyy hh:mm:ss}}",
+            "dataPath": "InvcHead.InvoiceDate"
+          },
+          {
+            "column": "dianValidationDate",
+            "value": "{{Pending.DianValidationDateTime|date:dd/MM/yyyy hh:mm:ss}}",
+            "dataPath": "Pending.DianValidationDateTime"
+          }
+        ]
+      },
+      "columns": [
+        {
+          "id": "invoiceDate",
+          "title": "FECHA FACTURA:",
+          "widthMm": 38
+        },
+        {
+          "id": "dueDate",
+          "title": "FECHA VENCIMIENTO:",
+          "widthMm": 38
+        },
+        {
+          "id": "currency",
+          "title": "MONEDA:",
+          "widthMm": 38
+        },
+        {
+          "id": "erpGenerationDate",
+          "title": "FECHA GENERACIÓN ERP:",
+          "widthMm": 38
+        },
+        {
+          "id": "dianValidationDate",
+          "title": "FECHA VALIDACIÓN DIAN:",
+          "widthMm": 39
+        }
+      ],
+      "style": {
+        "fontFamily": "Arial",
+        "fontSizePt": 6.5,
+        "alignment": "center",
+        "headerBold": true,
+        "border": {
+          "color": "#222222",
+          "widthPt": 0.8,
+          "style": "solid",
+          "radiusMm": 1.5
+        }
+      }
+    },
+    {
+      "id": "invoice-details",
+      "name": "Product and service details",
+      "type": "table",
+      "position": {
+        "x": 5,
+        "y": 117,
+        "width": 191,
+        "height": 58,
+        "unit": "mm"
+      },
+      "content": {
+        "mode": "collection",
+        "dataPath": "InvcDtl",
+        "rowAlias": "Row",
+        "selector": {
+          "type": "siblingElements",
+          "elementName": "InvcDtl"
+        },
+        "showRecordCount": true,
+        "recordCountLabel": "TOTAL ÍTEMS: {{Table.RecordCount}}"
+      },
+      "rowTemplate": {
+        "id": "invoice-detail-row-template",
+        "runtimeId": "{{Component.Id}}/row-{{Iteration.Index}}",
+        "minHeightMm": 8,
+        "maxHeightMm": 18,
+        "heightMode": "content",
+        "dataContext": "Row"
+      },
+      "columns": [
+        {
+          "id": "item",
+          "title": "ÍTEM",
+          "widthMm": 10,
+          "value": "{{Row.InvoiceLine}}",
+          "dataPath": "Row.InvoiceLine",
+          "defaultValue": "{{Iteration.Index}}",
+          "alignment": "center"
+        },
+        {
+          "id": "code",
+          "title": "CÓDIGO",
+          "widthMm": 20,
+          "value": "{{Row.PartNum}}",
+          "dataPath": "Row.PartNum"
+        },
+        {
+          "id": "description",
+          "title": "DESCRIPCIÓN",
+          "widthMm": 60,
+          "value": "{{Row.LineDesc}}\n{{Pending.RowLotText}}",
+          "fallback": {
+            "dataPath": "Row.PartNumPartDescription"
+          },
+          "dataPaths": [
+            "Row.LineDesc",
+            "Pending.RowLotText"
+          ]
+        },
+        {
+          "id": "quantity",
+          "title": "CANTIDAD",
+          "widthMm": 20,
+          "value": "{{Row.SellingShipQty|number:2}}",
+          "dataPath": "Row.SellingShipQty",
+          "alignment": "center"
+        },
+        {
+          "id": "unit",
+          "title": "UNIDAD",
+          "widthMm": 20,
+          "value": "{{Row.UOMCode}}",
+          "dataPath": "Row.UOMCode",
+          "alignment": "center"
+        },
+        {
+          "id": "unitPrice",
+          "title": "VALOR\nUNITARIO",
+          "widthMm": 20,
+          "value": "{{Row.DocUnitPrice|currency:InvcHead.CurrencyCode}}",
+          "dataPath": "Row.DocUnitPrice",
+          "alignment": "right"
+        },
+        {
+          "id": "vatPercentage",
+          "title": "% IVA",
+          "widthMm": 20,
+          "value": "{{Pending.RowVatRate|number:0}} %",
+          "alignment": "center",
+          "dataPath": "Pending.RowVatRate"
+        },
+        {
+          "id": "total",
+          "title": "TOTAL",
+          "widthMm": 21,
+          "value": "{{Row.DocExtPrice|currency:InvcHead.CurrencyCode}}",
+          "dataPath": "Row.DocExtPrice",
+          "alignment": "right"
+        }
+      ],
+      "behavior": {
+        "headerHeightMm": 7,
+        "minRowHeightMm": 8,
+        "maxRowHeightMm": 18,
+        "repeatHeader": true,
+        "allowPageBreak": true,
+        "keepRowTogether": true,
+        "growVertically": true,
+        "moveFollowingComponents": true,
+        "generateRuntimeComponents": true,
+        "persistRuntimeComponents": false,
+        "reservedBottomSpaceMm": 85
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSizePt": 7,
+        "header": {
+          "bold": true,
+          "alignment": "center",
+          "background": "#FFFFFF"
+        },
+        "border": {
+          "color": "#555555",
+          "widthPt": 0.5,
+          "style": "solid"
+        }
+      },
+      "optionalColumns": [
+        {
+          "id": "incPercentage",
+          "title": "% INC",
+          "visibilityCondition": "hasDianTax('04', InvcTax)",
+          "value": "{{Row.InvoiceLine|taxRate:'04':InvcTax}}"
+        },
+        {
+          "id": "icui",
+          "title": "ICUI",
+          "visibilityCondition": "hasDianTax('35', InvcTax)",
+          "value": "{{Row.InvoiceLine|taxValue:'35':InvcTax}}"
+        },
+        {
+          "id": "discount",
+          "title": "DESCUENTO",
+          "visibilityCondition": "any(InvcDtl.Discount > 0)",
+          "value": "{{Row.DocDiscount|coalesceByCurrency:Row.Discount:InvcHead.CurrencyCode}}"
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "name": "Notes",
+      "type": "container",
+      "position": {
+        "x": 5,
+        "y": 180,
+        "width": 191,
+        "height": 12,
+        "unit": "mm"
+      },
+      "anchor": {
+        "mode": "after",
+        "componentId": "invoice-details",
+        "spacingMm": 3
+      },
+      "style": {
+        "padding": 1,
+        "border": {
+          "color": "#222222",
+          "widthPt": 0.8,
+          "style": "solid",
+          "radiusMm": 1.5
+        }
+      },
+      "components": [
+        {
+          "id": "notes-label",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 30,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "OBSERVACIONES:"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 7
+          }
+        },
+        {
+          "id": "notes-value",
+          "type": "text",
+          "position": {
+            "x": 1,
+            "y": 4,
+            "width": 189,
+            "height": 7,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "{{InvcHead.InvoiceComment}}",
+            "dataPath": "InvcHead.InvoiceComment",
+            "defaultValue": ""
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "fit": "shrinkToFit"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bottom-summary",
+      "name": "Amount in words, terms and totals",
+      "type": "container",
+      "position": {
+        "x": 5,
+        "y": 194,
+        "width": 191,
+        "height": 47,
+        "unit": "mm"
+      },
+      "anchor": {
+        "mode": "after",
+        "componentId": "notes",
+        "spacingMm": 2
+      },
+      "components": [
+        {
+          "id": "amount-in-words-and-terms",
+          "type": "container",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 94.5,
+            "height": 47,
+            "unit": "mm"
+          },
+          "style": {
+            "border": {
+              "color": "#222222",
+              "widthPt": 0.8,
+              "style": "solid",
+              "radiusMm": 1.5
+            }
+          },
+          "components": [
+            {
+              "id": "amount-in-words",
+              "type": "text",
+              "position": {
+                "x": 1.5,
+                "y": 2,
+                "width": 91.5,
+                "height": 13,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "VALOR EN LETRAS: {{Pending.AmountInWords}}",
+                "dataPath": "Pending.AmountInWords"
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 8,
+                "bold": true,
+                "verticalAlignment": "bottom"
+              }
+            },
+            {
+              "id": "amount-terms-separator",
+              "type": "line",
+              "position": {
+                "x": 0,
+                "y": 16,
+                "width": 94.5,
+                "height": 0,
+                "unit": "mm"
+              },
+              "style": {
+                "color": "#555555",
+                "widthPt": 0.5,
+                "style": "solid"
+              }
+            },
+            {
+              "id": "legal-terms",
+              "type": "text",
+              "position": {
+                "x": 1.5,
+                "y": 18,
+                "width": 91.5,
+                "height": 27,
+                "unit": "mm"
+              },
+              "content": {
+                "value": "{{InvcHead.Legends3}}",
+                "dataPath": "InvcHead.Legends3",
+                "defaultValue": "El pago no oportuno de la presente factura de venta causará intereses de mora a la tasa máxima legal establecida. La presente factura de venta tiene el carácter de título valor y se regirá por las normas aplicables."
+              },
+              "style": {
+                "fontFamily": "Arial",
+                "fontSizePt": 6,
+                "alignment": "justify",
+                "lineHeight": 0.95,
+                "fit": "shrinkToFit"
+              }
+            }
+          ]
+        },
+        {
+          "id": "totals",
+          "name": "Invoice totals",
+          "type": "table",
+          "position": {
+            "x": 96.5,
+            "y": 0,
+            "width": 94.5,
+            "height": 47,
+            "unit": "mm"
+          },
+          "content": {
+            "mode": "fixedRows",
+            "rows": [
+              {
+                "label": "SUBTOTAL",
+                "value": "{{InvcHead.DspDocSubTotal|currency:InvcHead.CurrencyCode}}",
+                "dataPath": "InvcHead.DspDocSubTotal"
+              },
+              {
+                "label": "TOTAL RETENCIONES",
+                "value": "{{InvcHead.DocWHTaxAmt|currency:InvcHead.CurrencyCode}}",
+                "dataPath": "InvcHead.DocWHTaxAmt"
+              },
+              {
+                "label": "TOTAL IMPUESTOS",
+                "value": "{{InvcHead.DocTaxAmt|currency:InvcHead.CurrencyCode}}",
+                "dataPath": "InvcHead.DocTaxAmt"
+              },
+              {
+                "label": "TOTAL",
+                "value": "{{InvcHead.DspDocInvoiceAmt|currency:InvcHead.CurrencyCode}}",
+                "dataPath": "InvcHead.DspDocInvoiceAmt"
+              }
+            ],
+            "optionalRows": [
+              {
+                "label": "TOTAL DESCUENTOS",
+                "value": "{{InvcHead.Discount|currency:InvcHead.CurrencyCode}}",
+                "dataPath": "InvcHead.Discount",
+                "visibilityCondition": "InvcHead.Discount > 0"
+              },
+              {
+                "label": "{{Row.Description}}",
+                "value": "{{Row.Amount|currency:InvcHead.CurrencyCode}}",
+                "collectionPath": "InvcMisc",
+                "visibilityCondition": "Row.DocMiscAmt > 0 || Row.MiscAmt > 0"
+              },
+              {
+                "label": "TOTAL RETE IVA",
+                "value": "{{InvcTax|taxTotal:'05'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('05') > 0"
+              },
+              {
+                "label": "TOTAL RETE FUENTE",
+                "value": "{{InvcTax|taxTotal:'06'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('06') > 0"
+              },
+              {
+                "label": "TOTAL RETE ICA",
+                "value": "{{InvcTax|taxTotal:'07'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('07') > 0"
+              },
+              {
+                "label": "TOTAL IVA",
+                "value": "{{InvcTax|taxTotal:'01'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('01') > 0"
+              },
+              {
+                "label": "TOTAL INC",
+                "value": "{{InvcTax|taxTotal:'04'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('04') > 0"
+              },
+              {
+                "label": "TOTAL ICUI",
+                "value": "{{InvcTax|taxTotal:'35'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('35') > 0"
+              },
+              {
+                "label": "TOTAL IBUI",
+                "value": "{{InvcTax|taxTotal:'34'|currency:InvcHead.CurrencyCode}}",
+                "visibilityCondition": "taxTotal('34') > 0"
+              }
+            ]
+          },
+          "columns": [
+            {
+              "id": "label",
+              "widthMm": 35,
+              "style": {
+                "bold": true
+              }
+            },
+            {
+              "id": "value",
+              "widthMm": 59.5,
+              "style": {
+                "alignment": "left"
+              }
+            }
+          ],
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 7,
+            "rowHeightMm": 9.5,
+            "border": {
+              "color": "#555555",
+              "widthPt": 0.5,
+              "style": "solid",
+              "radiusMm": 1.5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "customer-receipt",
+      "name": "Customer receipt",
+      "type": "container",
+      "position": {
+        "x": 5,
+        "y": 243,
+        "width": 191,
+        "height": 31,
+        "unit": "mm"
+      },
+      "anchor": {
+        "mode": "after",
+        "componentId": "bottom-summary",
+        "spacingMm": 2
+      },
+      "style": {
+        "padding": 1,
+        "border": {
+          "color": "#222222",
+          "widthPt": 0.8,
+          "style": "solid",
+          "radiusMm": 1.5
+        }
+      },
+      "components": [
+        {
+          "id": "receipt-date",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 70,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "Fecha de recibido: {{Pending.Recepcion.Fecha}}",
+            "dataPath": "Pending.Recepcion.Fecha"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "bold": true
+          }
+        },
+        {
+          "id": "receipt-name",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 100,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "Nombre: {{Pending.Recepcion.Nombre}}",
+            "dataPath": "Pending.Recepcion.Nombre"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "bold": true
+          }
+        },
+        {
+          "id": "receipt-identification",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 100,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "Identificación: {{Pending.Recepcion.Identificacion}}",
+            "dataPath": "Pending.Recepcion.Identificacion"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "bold": true
+          }
+        },
+        {
+          "id": "receipt-signature-label",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 20,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "Firma:"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "bold": true
+          }
+        },
+        {
+          "id": "receipt-signature-line",
+          "type": "line",
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 67,
+            "height": 0,
+            "unit": "mm"
+          },
+          "style": {
+            "color": "#222222",
+            "widthPt": 0.8,
+            "style": "solid"
+          }
+        },
+        {
+          "id": "receipt-confirmation",
+          "type": "text",
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 100,
+            "height": 4,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "RECIBIDO CONFORME FIRMA Y SELLO DEL CLIENTE"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "bold": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "name": "Footer",
+      "type": "container",
+      "position": {
+        "x": 5,
+        "y": 276,
+        "width": 191,
+        "height": 13,
+        "unit": "mm"
+      },
+      "behavior": {
+        "mode": "fixed",
+        "repeatOn": "allPages"
+      },
+      "components": [
+        {
+          "id": "footer-logo-image",
+          "type": "image",
+          "position": {
+            "x": 1,
+            "y": 2,
+            "width": 18,
+            "height": 9,
+            "unit": "mm"
+          },
+          "content": {
+            "source": "asset",
+            "assetId": "logo-pie",
+            "fit": "contain"
+          }
+        },
+        {
+          "id": "footer-copyright",
+          "type": "text",
+          "position": {
+            "x": 32,
+            "y": 2,
+            "width": 127,
+            "height": 7,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "© Copyright {{Runtime.CurrentYear}}. Documento creado por BTW S.A.S proveedor tecnológico de {{Company.Name|upper}}, sujeto a condiciones y restricciones.",
+            "dataPaths": [
+              "Runtime.CurrentYear",
+              "Company.Name"
+            ]
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6.5,
+            "alignment": "center",
+            "lineHeight": 1
+          }
+        },
+        {
+          "id": "footer-website",
+          "type": "text",
+          "position": {
+            "x": 70,
+            "y": 9,
+            "width": 50,
+            "height": 3,
+            "unit": "mm"
+          },
+          "content": {
+            "value": "{{Pending.ProveedorTecnologico.SitioWeb}}",
+            "dataPath": "Pending.ProveedorTecnologico.SitioWeb"
+          },
+          "style": {
+            "fontFamily": "Arial",
+            "fontSizePt": 6,
+            "color": "#0000EE",
+            "underline": true,
+            "alignment": "center"
+          }
+        }
+      ]
+    }
+  ],
+  "renderingRules": {
+    "baseUnit": "mm",
+    "coordinateOrigin": "topLeft",
+    "clipContentOutsideParent": true,
+    "drawingOrder": "componentOrder",
+    "dynamicComponents": {
+      "invoice-details": {
+        "canGrow": true,
+        "canCreatePages": true,
+        "moveAnchoredComponents": true
+      }
+    },
+    "missingFieldPolicy": {
+      "required": "error",
+      "optional": "useDefaultValue"
+    }
+  },
+  "validation": {
+    "pendingBindings": [
+      {
+        "id": "AmountInWords",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "BusinessLine",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "DianValidationDateTime",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "Factura.Numero",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "Factura.Prefijo",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "InvcHead.LegendLegal",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "IssuerCheckDigit",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "ProveedorTecnologico.SitioWeb",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "Recepcion.Fecha",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "Recepcion.Identificacion",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "Recepcion.Nombre",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "RowLotText",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "RowVatRate",
+        "dataPath": "",
+        "status": "pendingValidation"
+      },
+      {
+        "id": "UniqueCodeLabel",
+        "dataPath": "",
+        "status": "pendingValidation"
+      }
+    ]
+  }
+}

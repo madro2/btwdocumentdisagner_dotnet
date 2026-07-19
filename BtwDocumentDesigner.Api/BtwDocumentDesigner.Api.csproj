@@ -24,4 +24,10 @@
     <ProjectReference Include="..\BtwDocumentDesigner.Application\BtwDocumentDesigner.Application.csproj" />
     <ProjectReference Include="..\BtwDocumentDesigner.Infrastructure\BtwDocumentDesigner.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="SeedData\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

@@ -138,7 +138,6 @@ jobs:
               printf 'Database__ConnectionString=%s\n' "$DB_CONNECTION_STRING"
             ) | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
             sudo chmod 600 /etc/btwdocapi.env
-            sudo /usr/bin/cat /etc/btwdocapi.env
             sudo rm -rf /opt/btwdocapi
             sudo mv /var/tmp/btwdocapi-staging /opt/btwdocapi
             sudo chown -R www-data:www-data /opt/btwdocapi
@@ -181,7 +180,6 @@ jobs:
             if [ "$STATUS" != "200" ]; then
               echo "::error::API health check failed: HTTP $STATUS"
               sudo journalctl -u btwdocapi --no-pager -n 60 || true
-              sudo /usr/bin/cat /etc/btwdocapi.env
               exit 1
             fi
             # Verify proxy through nginx on 5005
