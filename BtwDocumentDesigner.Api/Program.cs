@@ -24,6 +24,17 @@ builder.Services.AddScoped<IDesignService, DesignService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IGeneratorService, GeneratorService>();
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -34,6 +45,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAngularApp");
 
 // Map ASP.NET Core Controllers
 app.MapControllers();
