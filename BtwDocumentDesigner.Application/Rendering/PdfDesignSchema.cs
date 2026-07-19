@@ -7,6 +7,19 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string SchemaVersion { get; set; } = string.Empty;
         public PageSettings Page { get; set; } = new();
         public List<PdfComponent> Components { get; set; } = new();
+        /// <summary>
+        /// Páginas del diseño. Si está vacío, se usa <see cref="Page"/> y
+        /// <see cref="Components"/> de la raíz (compatibilidad con contratos de una página).
+        /// </summary>
+        public List<PdfDesignPage> Pages { get; set; } = new();
+    }
+
+    public sealed class PdfDesignPage
+    {
+        public string Id { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public PageSettings Page { get; set; } = new();
+        public List<PdfComponent> Components { get; set; } = new();
     }
 
     public sealed class PageSettings

@@ -45,27 +45,63 @@ namespace BtwDocumentDesigner.Application.Rendering
                 options)
                 ?? throw new InvalidOperationException(
                     "Diseño JSON inválido.");
-
             var systemDefaults = await _systemDefaultValueRepository.GetAllAsync();
             var context = BindingContext.Create(payload, contentType, systemDefaults);
+            var designPages = ResolveDesignPages(schema);
 
             using var document = new PdfDocument();
-            var page = AddPage(document, schema.Page);
-            using var gfx = XGraphics.FromPdfPage(page);
+            var totalPages = designPages.Count;
 
-            var pageBrush = new XSolidBrush(ParseColor(schema.Page.Background));
-            gfx.DrawRectangle(pageBrush, 0, 0, page.Width.Point, page.Height.Point);
+            for (var index = 0; index < designPages.Count; index++)
+            {
+                var designPage = designPages[index];
+                var page = AddPage(document, designPage.Page);
+                using var gfx = XGraphics.FromPdfPage(page);
 
-            var rootPositions = ResolveRootPositions(schema.Components, context);
-            await RenderComponents(
-                gfx,
-                schema.Components,
-                context.WithPage(1, 1),
-                rootPositions);
+                var pageBrush = new XSolidBrush(
+                    ParseColor(designPage.Page.Background));
+                gfx.DrawRectangle(
+                    pageBrush,
+                    0,
+                    0,
+                    page.Width.Point,
+                    page.Height.Point);
+
+                var rootPositions = ResolveRootPositions(
+                    designPage.Components,
+                    context);
+                await RenderComponents(
+                    gfx,
+                    designPage.Components,
+                    context.WithPage(index + 1, totalPages),
+                    rootPositions);
+            }
 
             using var stream = new MemoryStream();
             document.Save(stream, false);
             return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Usa <c>pages</c> cuando existe; si no, cae a la página raíz legacy.
+        /// </summary>
+        private static List<PdfDesignPage> ResolveDesignPages(
+            PdfDesignSchema schema)
+        {
+            if (schema.Pages is { Count: > 0 })
+            {
+                return schema.Pages;
+            }
+
+            return
+            [
+                new PdfDesignPage
+                {
+                    Id = "page-1",
+                    Page = schema.Page,
+                    Components = schema.Components
+                }
+            ];
         }
 
         private static PdfPage AddPage(
@@ -75,11 +111,18 @@ namespace BtwDocumentDesigner.Application.Rendering
             var page = document.AddPage();
             var width = settings.WidthMm > 0 ? settings.WidthMm : 210;
             var height = settings.HeightMm > 0 ? settings.HeightMm : 297;
-
-            if (string.Equals(
+            var landscape = string.Equals(
                 settings.Orientation,
                 "landscape",
-                StringComparison.OrdinalIgnoreCase))
+                StringComparison.OrdinalIgnoreCase);
+
+            // El editor ya envía widthMm/heightMm según la orientación.
+            // Solo intercambiar si las dimensiones aún no coinciden.
+            if (landscape && width < height)
+            {
+                (width, height) = (height, width);
+            }
+            else if (!landscape && width > height)
             {
                 (width, height) = (height, width);
             }

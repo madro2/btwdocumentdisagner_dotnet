@@ -76,6 +76,19 @@ public static class DatabaseSeeder
             document["version"] = NationalInvoiceVersion;
 
             ReplaceAssetIds(contract["components"], HeaderLogoId, FooterLogoId);
+            if (contract["pages"] is JsonArray pages)
+            {
+                foreach (var pageNode in pages)
+                {
+                    if (pageNode is JsonObject pageObject)
+                    {
+                        ReplaceAssetIds(
+                            pageObject["components"],
+                            HeaderLogoId,
+                            FooterLogoId);
+                    }
+                }
+            }
 
             db.PdfDesignTemplates.Add(
                 new PdfDesignTemplate
