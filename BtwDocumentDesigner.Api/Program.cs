@@ -15,6 +15,16 @@ builder.Services.AddControllers(options => options.InputFormatters.Insert(0, new
     });
 
 // Options Pattern Configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(DatabaseOptions.SectionName));
 
 // Configure DbContext via IOptions
@@ -49,12 +59,15 @@ builder.Services.AddHttpClient<
         client.BaseAddress = baseUri;
         client.Timeout = TimeSpan.FromSeconds(45);
     });
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
