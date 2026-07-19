@@ -121,12 +121,13 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          ELECTRONIC_DOCUMENTS_BASE_URL: ${{ vars.ELECTRONIC_DOCUMENTS_BASE_URL || 'http://192.168.10.55:37128/' }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: DB_CONNECTION_STRING
+          envs: DB_CONNECTION_STRING,ELECTRONIC_DOCUMENTS_BASE_URL
           request_pty: true
           script: |
             # Expand the secret in the ssh shell (not under sudo) and write the env file
@@ -136,6 +137,7 @@ jobs:
               printf 'ASPNETCORE_URLS=http://127.0.0.1:5000\n'
               printf 'DOTNET_ROOT=/home/ubuntu/.dotnet\n'
               printf 'Database__ConnectionString=%s\n' "$DB_CONNECTION_STRING"
+              printf 'ElectronicDocuments__BaseUrl=%s\n' "$ELECTRONIC_DOCUMENTS_BASE_URL"
             ) | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
             sudo chmod 600 /etc/btwdocapi.env
             sudo rm -rf /opt/btwdocapi
