@@ -92,6 +92,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          request_pty: true
           script: |
             sudo /usr/bin/tee /etc/systemd/system/btwdocapi.service > /dev/null << 'UNITEOF'
             [Unit]
@@ -125,6 +126,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: DB_CONNECTION_STRING
+          request_pty: true
           script: |
             # Expand the secret in the ssh shell (not under sudo) and write the env file
             # by piping the whole content through sudo tee.
