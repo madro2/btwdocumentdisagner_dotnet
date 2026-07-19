@@ -93,46 +93,78 @@ public static class DatabaseSeeder
         await SeedBasicDataSourceAsync(db, basicFieldsPath);
     }
 
-    private static async Task SeedBasicDataSourceAsync(
+    internal static async Task SeedBasicDataSourceAsync(
         AppDbContext db,
         string seedPath)
     {
-        if (await db.DataSourceCollections.AnyAsync(
-            collection => collection.Id == BasicFieldsCollectionId))
-        {
-            return;
-        }
-
         var seed = JsonSerializer.Deserialize<BasicDataSourceSeed>(
             await File.ReadAllTextAsync(seedPath),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new InvalidOperationException(
                 "El catálogo semilla de fuentes de datos no es válido.");
-        var collection = new DataSourceCollection
+        var duplicatePath = seed.Fields
+            .GroupBy(field => field.Path.Trim(), StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicatePath is not null)
         {
-            Id = BasicFieldsCollectionId,
-            Name = seed.Name,
-            Description = seed.Description,
-            SourceType = seed.SourceType,
-            CreationDate = DateTime.UtcNow
-        };
-        foreach (var field in seed.Fields.OrderBy(item => item.SortOrder))
-        {
-            collection.Fields.Add(
-                new DataSourceField
-                {
-                    Name = field.Name,
-                    DisplayName = field.DisplayName,
-                    Description = field.Description,
-                    Path = field.Path,
-                    DataType = field.DataType,
-                    Cardinality = field.Cardinality,
-                    Group = field.Group,
-                    SortOrder = field.SortOrder
-                });
+            throw new InvalidOperationException(
+                $"El catálogo semilla contiene el path duplicado '{duplicatePath.Key}'.");
         }
 
-        db.DataSourceCollections.Add(collection);
+        var collection = await db.DataSourceCollections
+            .Include(item => item.Fields)
+            .SingleOrDefaultAsync(item => item.Id == BasicFieldsCollectionId);
+        if (collection is null)
+        {
+            collection = new DataSourceCollection
+            {
+                Id = BasicFieldsCollectionId,
+                CreationDate = DateTime.UtcNow
+            };
+            db.DataSourceCollections.Add(collection);
+        }
+        else
+        {
+            collection.ModificationDate = DateTime.UtcNow;
+        }
+
+        collection.Name = seed.Name.Trim();
+        collection.Description = seed.Description.Trim();
+        collection.SourceType = seed.SourceType.Trim();
+
+        var existingByPath = collection.Fields.ToDictionary(
+            field => field.Path,
+            StringComparer.Ordinal);
+        var seededPaths = seed.Fields
+            .Select(field => field.Path.Trim())
+            .ToHashSet(StringComparer.Ordinal);
+        var obsoleteFields = collection.Fields
+            .Where(field => !seededPaths.Contains(field.Path))
+            .ToList();
+        if (obsoleteFields.Count > 0)
+        {
+            db.DataSourceFields.RemoveRange(obsoleteFields);
+        }
+
+        foreach (var field in seed.Fields.OrderBy(item => item.SortOrder))
+        {
+            var path = field.Path.Trim();
+            if (!existingByPath.TryGetValue(path, out var entity))
+            {
+                entity = new DataSourceField { Path = path };
+                collection.Fields.Add(entity);
+                db.DataSourceFields.Add(entity);
+            }
+
+            entity.Name = field.Name.Trim();
+            entity.DisplayName = field.DisplayName.Trim();
+            entity.Description = field.Description.Trim();
+            entity.DataType = field.DataType.Trim();
+            entity.Cardinality = field.Cardinality.Trim();
+            entity.Group = field.Group.Trim();
+            entity.SortOrder = field.SortOrder;
+        }
+
         await db.SaveChangesAsync();
     }
 
