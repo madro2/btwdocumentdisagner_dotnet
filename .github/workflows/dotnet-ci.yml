@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
 
       - name: Publish
-        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained false -p:UseAppHost=true
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained true -p:UseAppHost=true -p:PublishSingleFile=false
 
       - name: Upload build artifact
         if: always()
@@ -57,7 +57,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Publish
-        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained false -p:UseAppHost=true
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained true -p:UseAppHost=true -p:PublishSingleFile=false
 
       - name: Stop running service
         uses: appleboy/ssh-action@master
@@ -94,19 +94,21 @@ jobs:
             sudo mv /opt/btwdocapi-staging /opt/btwdocapi
             sudo chown -R www-data:www-data /opt/btwdocapi
             sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
-            # Persist database connection string into env file if secret present
-            if [ -n "$DB_CONNECTION_STRING" ]; then
-              echo "DB_CONNECTION_STRING=$DB_CONNECTION_STRING" | sudo tee /etc/btwdocapi.env.db > /dev/null
-              sudo bash -c "grep -v '^ConnectionStrings__DefaultConnection=' /etc/btwdocapi.env > /tmp/btwdocapi.env.tmp || true; \
-                echo 'ConnectionStrings__DefaultConnection=$DB_CONNECTION_STRING' >> /tmp/btwdocapi.env.tmp; \
-                cat /tmp/btwdocapi.env.tmp | sudo tee /etc/btwdocapi.env > /dev/null"
-              sudo chmod 600 /etc/btwdocapi.env
-            fi
+            # Write env file (overwrite) so DB connection string and runtime are always correct
+            sudo bash -c "cat > /etc/btwdocapi.env" << 'ENVEOF'
+            ASPNETCORE_ENVIRONMENT=Production
+            ASPNETCORE_URLS=http://127.0.0.1:5000
+            DOTNET_ROOT=/home/ubuntu/.dotnet
+            Database__ConnectionString=$DB_CONNECTION_STRING
+            ENVEOF
+            sudo chmod 600 /etc/btwdocapi.env
             sudo systemctl daemon-reload
             sudo systemctl enable btwdocapi
-            sudo systemctl start btwdocapi
-            sleep 5
-            sudo systemctl status btwdocapi --no-pager || true
+            sudo systemctl restart btwdocapi
+            sleep 8
+            sudo systemctl status btwdocapi --no-pager | head -15 || true
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
 
       - name: Reload nginx
         uses: appleboy/ssh-action@master
