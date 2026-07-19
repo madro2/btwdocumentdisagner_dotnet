@@ -959,6 +959,14 @@ namespace BtwDocumentDesigner.Application.Rendering
                 {
                     system["CurrentYear"] = DateTime.Now.Year;
                 }
+                if (!system.ContainsKey("Cufe"))
+                {
+                    system["Cufe"] = "964e5c464e815616b71f98d41234567890abcdef";
+                }
+                if (!system.ContainsKey("QrImage"))
+                {
+                    system["QrImage"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+                }
 
                 JToken? jsonResult = null;
                 XDocument? xmlResult = null;
