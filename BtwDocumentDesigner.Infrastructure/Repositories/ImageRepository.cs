@@ -30,13 +30,17 @@ namespace BtwDocumentDesigner.Infrastructure.Repositories
         public async Task<PdfDesignImage?> GetByIdAsync(Guid id)
         {
             var image = await _db.PdfDesignImages.FindAsync(id);
-            if (image != null && image.ImageData.Length == 0)
+            if (image != null && (image.ImageData == null || image.ImageData.Length == 0))
             {
                 // Populate ImageData from file for legacy/controller usage
                 var filePath = Path.Combine(_uploadFolder, $"{image.Id}{Path.GetExtension(image.FileName)}");
                 if (File.Exists(filePath))
                 {
                     image.ImageData = await File.ReadAllBytesAsync(filePath);
+                }
+                else
+                {
+                    image.ImageData = Array.Empty<byte>();
                 }
             }
             return image;

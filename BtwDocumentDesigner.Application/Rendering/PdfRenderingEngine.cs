@@ -22,7 +22,7 @@ namespace BtwDocumentDesigner.Application.Rendering
             if (PdfSharp.Fonts.GlobalFontSettings.FontResolver == null)
             {
                 PdfSharp.Fonts.GlobalFontSettings.FontResolver =
-                    new WindowsFontResolver();
+                    new CrossPlatformFontResolver();
             }
         }
 
