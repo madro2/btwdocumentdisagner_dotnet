@@ -67,7 +67,9 @@ public sealed class PdfRenderingEngineTests
     public async Task GeneratePdfAsync_RendersEachEntryInPagesArray()
     {
         var images = new Mock<IImageRepository>();
-        var engine = new PdfRenderingEngine(images.Object);
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync()).ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
         const string design = """
             {
               "page": {
@@ -133,7 +135,9 @@ public sealed class PdfRenderingEngineTests
     public async Task GeneratePdfAsync_KeepsLegacySinglePageContract()
     {
         var images = new Mock<IImageRepository>();
-        var engine = new PdfRenderingEngine(images.Object);
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync()).ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
         const string design = """
             {
               "page": {
