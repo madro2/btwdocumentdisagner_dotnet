@@ -93,14 +93,20 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Expand the secret in the ssh shell (not under sudo) and write the env file
+            # by piping the whole content through sudo tee.
+            (
+              printf 'ASPNETCORE_ENVIRONMENT=Production\n'
+              printf 'ASPNETCORE_URLS=http://127.0.0.1:5000\n'
+              printf 'DOTNET_ROOT=/home/ubuntu/.dotnet\n'
+              printf 'Database__ConnectionString=%s\n' "$DB_CONNECTION_STRING"
+            ) | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
+            sudo chmod 600 /etc/btwdocapi.env
+            sudo /usr/bin/cat /etc/btwdocapi.env
             sudo rm -rf /opt/btwdocapi
             sudo mv /opt/btwdocapi-staging /opt/btwdocapi
             sudo chown -R www-data:www-data /opt/btwdocapi
             sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
-            # Write env file using printf to ensure the env var is expanded by the shell
-            printf 'ASPNETCORE_ENVIRONMENT=Production\nASPNETCORE_URLS=http://127.0.0.1:5000\nDOTNET_ROOT=/home/ubuntu/.dotnet\nDatabase__ConnectionString=%s\n' "$DB_CONNECTION_STRING" | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
-            sudo chmod 600 /etc/btwdocapi.env
-            sudo /usr/bin/cat /etc/btwdocapi.env
             sudo systemctl daemon-reload
             sudo systemctl enable btwdocapi
             sudo systemctl restart btwdocapi
