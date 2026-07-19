@@ -27,7 +27,6 @@ jobs:
 
       - name: Test
         run: dotnet test BtwDocumentDesigner.Tests/BtwDocumentDesigner.Tests.csproj --no-build -c Release --logger "console;verbosity=normal"
-        continue-on-error: true
 
       - name: Publish
         run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained true -p:UseAppHost=true -p:PublishSingleFile=false
@@ -130,6 +129,10 @@ jobs:
           envs: DB_CONNECTION_STRING,ELECTRONIC_DOCUMENTS_BASE_URL
           request_pty: true
           script: |
+            if [ ! -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf ]; then
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y fonts-dejavu-core
+            fi
             # Expand the secret in the ssh shell (not under sudo) and write the env file
             # by piping the whole content through sudo tee.
             (
