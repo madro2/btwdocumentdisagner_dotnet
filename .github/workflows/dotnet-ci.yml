@@ -1,0 +1,142 @@
+name: .NET CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore btwdocumental_btwdocumentdisagner_dotnet.slnx
+
+      - name: Build
+        run: dotnet build btwdocumental_btwdocumentdisagner_dotnet.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test BtwDocumentDesigner.Tests/BtwDocumentDesigner.Tests.csproj --no-build -c Release --logger "console;verbosity=normal"
+
+      - name: Publish
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -p:UseAppHost=true
+
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btwdocapi-publish
+          path: publish/
+          retention-days: 7
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: http://149.130.173.73:5005/DocumentDesignerApi
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -p:UseAppHost=true
+
+      - name: Stop running service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl stop btwdocapi || true
+
+      - name: Copy build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "publish/"
+          target: "/opt/btwdocapi-staging/"
+          strip_components: 0
+          rm: false
+          command_timeout: 5m
+
+      - name: Promote build and start service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo rm -rf /opt/btwdocapi
+            sudo mv /opt/btwdocapi-staging /opt/btwdocapi
+            sudo chown -R www-data:www-data /opt/btwdocapi
+            sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
+            # Persist database connection string into env file if secret present
+            if [ -n "$DB_CONNECTION_STRING" ]; then
+              echo "DB_CONNECTION_STRING=$DB_CONNECTION_STRING" | sudo tee /etc/btwdocapi.env.db > /dev/null
+              sudo bash -c "grep -v '^ConnectionStrings__DefaultConnection=' /etc/btwdocapi.env > /tmp/btwdocapi.env.tmp || true; \
+                echo 'ConnectionStrings__DefaultConnection=$DB_CONNECTION_STRING' >> /tmp/btwdocapi.env.tmp; \
+                cat /tmp/btwdocapi.env.tmp | sudo tee /etc/btwdocapi.env > /dev/null"
+              sudo chmod 600 /etc/btwdocapi.env
+            fi
+            sudo systemctl daemon-reload
+            sudo systemctl enable btwdocapi
+            sudo systemctl start btwdocapi
+            sleep 5
+            sudo systemctl status btwdocapi --no-pager || true
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo /usr/sbin/nginx -t
+            sudo systemctl reload nginx
+
+      - name: Health check
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sleep 3
+            # Verify local API on 5000 is up
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ || echo "000")
+            if [ "$STATUS" != "200" ]; then
+              echo "::error::API health check failed: HTTP $STATUS"
+              sudo journalctl -u btwdocapi --no-pager -n 30 || true
+              exit 1
+            fi
+            echo "OK: API HTTP $STATUS on 5000"
+            # Verify proxy through nginx on 5005
+            PROXY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5005/DocumentDesignerApi/designs || echo "000")
+            echo "Proxy HTTP $PROXY_STATUS on 5005/DocumentDesignerApi/designs"
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
