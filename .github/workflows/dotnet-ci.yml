@@ -1,0 +1,191 @@
+name: .NET CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore btwdocumental_btwdocumentdisagner_dotnet.slnx
+
+      - name: Build
+        run: dotnet build btwdocumental_btwdocumentdisagner_dotnet.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test BtwDocumentDesigner.Tests/BtwDocumentDesigner.Tests.csproj --no-build -c Release --logger "console;verbosity=normal"
+        continue-on-error: true
+
+      - name: Publish
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained true -p:UseAppHost=true -p:PublishSingleFile=false
+
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: btwdocapi-publish
+          path: publish/
+          retention-days: 7
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: http://149.130.173.73:5005/DocumentDesignerApi
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: dotnet publish BtwDocumentDesigner.Api/BtwDocumentDesigner.Api.csproj -c Release -o publish/ -r linux-arm64 --self-contained true -p:UseAppHost=true -p:PublishSingleFile=false
+
+      - name: Stop running service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl stop btwdocapi || true
+            sudo rm -rf /opt/btwdocapi-staging /var/tmp/btwdocapi-staging
+            sudo mkdir -p /var/tmp/btwdocapi-staging
+            sudo chown ubuntu:ubuntu /var/tmp/btwdocapi-staging
+
+      - name: Copy build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "publish/"
+          target: "/var/tmp/btwdocapi-staging/"
+          strip_components: 1
+          rm: false
+          command_timeout: 5m
+
+      - name: Ensure systemd unit file is correct
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          request_pty: true
+          script: |
+            sudo /usr/bin/tee /etc/systemd/system/btwdocapi.service > /dev/null << 'UNITEOF'
+            [Unit]
+            Description=BtwDocumentDesigner .NET API
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=www-data
+            WorkingDirectory=/opt/btwdocapi
+            ExecStart=/opt/btwdocapi/BtwDocumentDesigner.Api
+            EnvironmentFile=/etc/btwdocapi.env
+            Restart=always
+            RestartSec=5
+            KillMode=process
+            TimeoutStartSec=120
+            TimeoutStopSec=30
+
+            [Install]
+            WantedBy=multi-user.target
+            UNITEOF
+            sudo chmod 644 /etc/systemd/system/btwdocapi.service
+            sudo systemctl daemon-reload
+
+      - name: Promote build and start service
+        uses: appleboy/ssh-action@master
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          ELECTRONIC_DOCUMENTS_BASE_URL: ${{ vars.ELECTRONIC_DOCUMENTS_BASE_URL || 'http://192.168.10.55:37128/' }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DB_CONNECTION_STRING,ELECTRONIC_DOCUMENTS_BASE_URL
+          request_pty: true
+          script: |
+            # Expand the secret in the ssh shell (not under sudo) and write the env file
+            # by piping the whole content through sudo tee.
+            (
+              printf 'ASPNETCORE_ENVIRONMENT=Production\n'
+              printf 'ASPNETCORE_URLS=http://127.0.0.1:5000\n'
+              printf 'DOTNET_ROOT=/home/ubuntu/.dotnet\n'
+              printf 'Database__ConnectionString=%s\n' "$DB_CONNECTION_STRING"
+              printf 'ElectronicDocuments__BaseUrl=%s\n' "$ELECTRONIC_DOCUMENTS_BASE_URL"
+            ) | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
+            sudo chmod 600 /etc/btwdocapi.env
+            sudo rm -rf /opt/btwdocapi
+            sudo mv /var/tmp/btwdocapi-staging /opt/btwdocapi
+            sudo chown -R www-data:www-data /opt/btwdocapi
+            sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
+            sudo rm -rf /var/tmp/btwdocapi-staging
+            sudo systemctl enable btwdocapi
+            sudo systemctl restart btwdocapi
+            sleep 30
+            sudo systemctl status btwdocapi --no-pager | head -15 || true
+
+      - name: Reload nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo /usr/sbin/nginx -t
+            sudo systemctl reload nginx
+
+      - name: Health check
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Wait up to ~150s for the service to start (longer on first run with EF migrations)
+            for i in $(seq 1 15); do
+              sleep 10
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:5000/ 2>/dev/null || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "OK: API HTTP $STATUS on 5000 (after $((i*10))s)"
+                break
+              fi
+              echo "Waiting for API (attempt $i/15, status=$STATUS)..."
+            done
+            if [ "$STATUS" != "200" ]; then
+              echo "::error::API health check failed: HTTP $STATUS"
+              sudo journalctl -u btwdocapi --no-pager -n 60 || true
+              exit 1
+            fi
+            # Verify proxy through nginx on 5005
+            PROXY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:5005/DocumentDesignerApi/designs || echo "000")
+            echo "Proxy HTTP $PROXY_STATUS on 5005/DocumentDesignerApi/designs"
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}

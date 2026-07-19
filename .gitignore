@@ -39,6 +39,8 @@ bld/
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/
+BtwDocumentDesigner.Api/wwwroot/uploads/f2000000-0000-0000-0000-000000000001.png
+BtwDocumentDesigner.Api/wwwroot/uploads/f2000000-0000-0000-0000-000000000002.png
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/

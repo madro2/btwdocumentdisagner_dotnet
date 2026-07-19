@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 using PdfSharp.Drawing.Layout;
@@ -29,6 +30,7 @@ public sealed class PdfRenderingEngine
     {
         lock (FontResolverLock)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             if (GlobalFontSettings.FontResolver is null)
                 GlobalFontSettings.FontResolver = new SystemFontResolver();
         }

@@ -1,9 +1,22 @@
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Services.Configure<ElectronicDocumentSourceOptions>(
+    builder.Configuration.GetSection(ElectronicDocumentSourceOptions.SectionName));
+
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => { c.EnableAnnotations();  });
-builder.Services.AddControllers(options => options.InputFormatters.Insert(0, new BtwDocumentDesigner.Api.Formatters.RawStringInputFormatter()));
+builder.Services
+    .AddControllers(options => options.InputFormatters.Insert(
+        0,
+        new BtwDocumentDesigner.Api.Formatters.RawStringInputFormatter()))
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Encoder =
+            System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+    });
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -29,15 +42,29 @@ builder.Services.AddSingleton<ContractValidationService>();
 builder.Services.AddScoped<IDesignService, DesignService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IGeneratorService, GeneratorService>();
+builder.Services.AddHttpClient<
+    IElectronicDocumentService,
+    BtwDocumentDesigner.Api.Services.ElectronicDocumentService>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<ElectronicDocumentSourceOptions>>()
+            .Value;
+        if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
+        {
+            throw new InvalidOperationException(
+                "ElectronicDocuments:BaseUrl no contiene una URL absoluta válida.");
+        }
+
+        client.BaseAddress = baseUri;
+        client.Timeout = TimeSpan.FromSeconds(45);
+    });
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseCors();
@@ -46,5 +73,14 @@ app.UseCors();
 app.MapControllers();
 
 app.MapGet("/", () => "Btw Document Designer API is running.");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    await BtwDocumentDesigner.Api.Data.DatabaseSeeder.SeedAsync(
+        db,
+        app.Environment);
+}
 
 app.Run();
