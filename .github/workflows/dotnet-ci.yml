@@ -87,11 +87,14 @@ jobs:
 
       - name: Promote build and start service
         uses: appleboy/ssh-action@master
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: DB_CONNECTION_STRING
           script: |
             # Expand the secret in the ssh shell (not under sudo) and write the env file
             # by piping the whole content through sudo tee.
@@ -113,8 +116,6 @@ jobs:
             sudo systemctl restart btwdocapi
             sleep 10
             sudo systemctl status btwdocapi --no-pager | head -15 || true
-        env:
-          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
 
       - name: Reload nginx
         uses: appleboy/ssh-action@master
