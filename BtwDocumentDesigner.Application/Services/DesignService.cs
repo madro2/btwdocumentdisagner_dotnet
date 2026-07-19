@@ -12,7 +12,7 @@ namespace BtwDocumentDesigner.Application.Services
         public async Task<PdfDesignTemplate> CreateDesignAsync(PdfDesignTemplate design)
         {
             var exists = await _designRepository.ExistsAsync(design.DesignName, design.DesignVersion);
-            if (exists) throw new InvalidOperationException("Ya existe un diseño con ese nombre y versión.");
+            if (exists) throw new InvalidOperationException("Ya existe un diseÃ±o con ese nombre y versiÃ³n.");
 
             design.CreationDate = DateTime.UtcNow;
             design.ModificationDate = null;

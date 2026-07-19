@@ -11,7 +11,7 @@ namespace BtwDocumentDesigner.Api.Controllers
             _generatorService = generatorService;
         }
 
-        [SwaggerOperation(Summary = "Genera un PDF", Description = "Recibe el nombre y versión del diseño, junto con un payload JSON, y devuelve el archivo PDF generado.")]
+        [SwaggerOperation(Summary = "Genera un PDF", Description = "Recibe el nombre y versiÃ³n del diseÃ±o, junto con un payload JSON, y devuelve el archivo PDF generado.")]
         [HttpPost("generate")]
         [Consumes("application/xml", "application/json", "text/plain")]
         public async Task<IActionResult> Generate([FromQuery] string designName, [FromQuery] int version, [FromBody] string payload)
