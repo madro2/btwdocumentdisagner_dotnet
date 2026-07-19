@@ -16,7 +16,7 @@ namespace BtwDocumentDesigner.Api.Controllers
         public async Task<IActionResult> Upload(IFormFile file)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("El archivo de imagen no es v·lido.");
+                return BadRequest("El archivo de imagen no es v√°lido.");
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);

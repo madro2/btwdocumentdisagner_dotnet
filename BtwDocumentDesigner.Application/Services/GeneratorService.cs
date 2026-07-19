@@ -14,7 +14,7 @@ namespace BtwDocumentDesigner.Application.Services
         public async Task<byte[]> GeneratePdfAsync(string designName, int version, string payload, string contentType)
         {
             var design = await _designRepository.SearchAsync(designName, version);
-            if (design == null) throw new InvalidOperationException("Plantilla de diseño no encontrada.");
+            if (design == null) throw new InvalidOperationException("Plantilla de diseÃ±o no encontrada.");
 
             return await _engine.GeneratePdfAsync(design.JsonConfiguration, payload, contentType);
         }
