@@ -78,7 +78,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "publish/"
           target: "/opt/btwdocapi-staging/"
-          strip_components: 0
+          strip_components: 1
           rm: false
           command_timeout: 5m
 
