@@ -85,7 +85,7 @@ jobs:
           rm: false
           command_timeout: 5m
 
-      - name: Update systemd unit
+      - name: Ensure systemd unit file is correct
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -93,23 +93,26 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            (
-              printf '[Unit]\n'
-              printf 'Description=BTW Document Designer API\n'
-              printf 'After=network.target\n\n'
-              printf '[Service]\n'
-              printf 'Type=simple\n'
-              printf 'TimeoutStartSec=120\n'
-              printf 'Restart=always\n'
-              printf 'RestartSec=5\n'
-              printf 'WorkingDirectory=/opt/btwdocapi\n'
-              printf 'ExecStart=/opt/btwdocapi/BtwDocumentDesigner.Api\n'
-              printf 'EnvironmentFile=/etc/btwdocapi.env\n'
-              printf 'User=www-data\n'
-              printf 'Group=www-data\n\n'
-              printf '[Install]\n'
-              printf 'WantedBy=multi-user.target\n'
-            ) | sudo tee /etc/systemd/system/btwdocapi.service > /dev/null
+            sudo /usr/bin/tee /etc/systemd/system/btwdocapi.service > /dev/null << 'UNITEOF'
+            [Unit]
+            Description=BtwDocumentDesigner .NET API
+            After=network.target
+
+            [Service]
+            Type=simple
+            User=www-data
+            WorkingDirectory=/opt/btwdocapi
+            ExecStart=/opt/btwdocapi/BtwDocumentDesigner.Api
+            EnvironmentFile=/etc/btwdocapi.env
+            Restart=always
+            RestartSec=5
+            TimeoutStartSec=120
+            TimeoutStopSec=30
+
+            [Install]
+            WantedBy=multi-user.target
+            UNITEOF
+            sudo chmod 644 /etc/systemd/system/btwdocapi.service
             sudo systemctl daemon-reload
 
       - name: Promote build and start service
@@ -138,10 +141,9 @@ jobs:
             sudo chown -R www-data:www-data /opt/btwdocapi
             sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
             sudo rm -rf /var/tmp/btwdocapi-staging
-            sudo systemctl daemon-reload
             sudo systemctl enable btwdocapi
             sudo systemctl restart btwdocapi
-            sleep 20
+            sleep 15
             sudo systemctl status btwdocapi --no-pager | head -15 || true
 
       - name: Reload nginx
@@ -163,19 +165,19 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Wait up to 100s for the service to start
-            for i in 1 2 3 4 5 6 7 8 9 10; do
+            # Wait up to ~150s for the service to start (longer on first run with EF migrations)
+            for i in $(seq 1 15); do
               sleep 10
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:5000/ 2>/dev/null || echo "000")
               if [ "$STATUS" = "200" ]; then
                 echo "OK: API HTTP $STATUS on 5000 (after $((i*10))s)"
                 break
               fi
-              echo "Waiting for API (attempt $i, status=$STATUS)..."
+              echo "Waiting for API (attempt $i/15, status=$STATUS)..."
             done
             if [ "$STATUS" != "200" ]; then
               echo "::error::API health check failed: HTTP $STATUS"
-              sudo journalctl -u btwdocapi --no-pager -n 40 || true
+              sudo journalctl -u btwdocapi --no-pager -n 60 || true
               sudo /usr/bin/cat /etc/btwdocapi.env
               exit 1
             fi
