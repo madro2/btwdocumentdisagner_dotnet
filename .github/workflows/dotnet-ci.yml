@@ -68,9 +68,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo systemctl stop btwdocapi || true
-            sudo rm -rf /opt/btwdocapi-staging
-            sudo mkdir -p /opt/btwdocapi-staging
-            sudo chown deploy:deploy /opt/btwdocapi-staging
+            sudo rm -rf /opt/btwdocapi-staging /var/tmp/btwdocapi-staging
+            sudo mkdir -p /var/tmp/btwdocapi-staging
+            sudo chown deploy:deploy /var/tmp/btwdocapi-staging
 
       - name: Copy build to server
         uses: appleboy/scp-action@master
@@ -80,7 +80,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "publish/"
-          target: "/opt/btwdocapi-staging/"
+          target: "/var/tmp/btwdocapi-staging/"
           strip_components: 1
           rm: false
           command_timeout: 5m
@@ -104,9 +104,10 @@ jobs:
             sudo chmod 600 /etc/btwdocapi.env
             sudo /usr/bin/cat /etc/btwdocapi.env
             sudo rm -rf /opt/btwdocapi
-            sudo mv /opt/btwdocapi-staging /opt/btwdocapi
+            sudo mv /var/tmp/btwdocapi-staging /opt/btwdocapi
             sudo chown -R www-data:www-data /opt/btwdocapi
             sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
+            sudo rm -rf /var/tmp/btwdocapi-staging
             sudo systemctl daemon-reload
             sudo systemctl enable btwdocapi
             sudo systemctl restart btwdocapi
