@@ -1,6 +1,7 @@
 using BtwDocumentDesigner.Application.Interfaces;
 using BtwDocumentDesigner.Application.Rendering;
 using Moq;
+using PdfSharp.Pdf.IO;
 
 namespace BtwDocumentDesigner.Tests.Application;
 
@@ -57,5 +58,106 @@ public sealed class PdfRenderingEngineTests
 
         Assert.True(result.Length > 100);
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(result, 0, 4));
+    }
+
+    [Fact]
+    public async Task GeneratePdfAsync_RendersEachEntryInPagesArray()
+    {
+        var images = new Mock<IImageRepository>();
+        var engine = new PdfRenderingEngine(images.Object);
+        const string design = """
+            {
+              "page": {
+                "widthMm": 210,
+                "heightMm": 297,
+                "orientation": "portrait",
+                "background": "#ffffff"
+              },
+              "components": [],
+              "pages": [
+                {
+                  "id": "p1",
+                  "page": {
+                    "widthMm": 210,
+                    "heightMm": 297,
+                    "orientation": "portrait",
+                    "background": "#ffffff"
+                  },
+                  "components": [
+                    {
+                      "id": "p1-text",
+                      "type": "text",
+                      "position": { "x": 10, "y": 10, "width": 80, "height": 10 },
+                      "content": { "value": "Página {{Pagina.Actual}} de {{Pagina.Total}}" }
+                    }
+                  ]
+                },
+                {
+                  "id": "p2",
+                  "page": {
+                    "widthMm": 297,
+                    "heightMm": 210,
+                    "orientation": "landscape",
+                    "background": "#f8fafc"
+                  },
+                  "components": [
+                    {
+                      "id": "p2-text",
+                      "type": "text",
+                      "position": { "x": 10, "y": 10, "width": 80, "height": 10 },
+                      "content": { "value": "Horizontal {{Pagina.Actual}}" }
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var result = await engine.GeneratePdfAsync(
+            design,
+            "<Root />",
+            "application/xml; charset=utf-8");
+
+        using var stream = new MemoryStream(result);
+        using var document = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+
+        Assert.Equal(2, document.PageCount);
+        Assert.True(document.Pages[0].Width.Millimeter < document.Pages[0].Height.Millimeter);
+        Assert.True(document.Pages[1].Width.Millimeter > document.Pages[1].Height.Millimeter);
+    }
+
+    [Fact]
+    public async Task GeneratePdfAsync_KeepsLegacySinglePageContract()
+    {
+        var images = new Mock<IImageRepository>();
+        var engine = new PdfRenderingEngine(images.Object);
+        const string design = """
+            {
+              "page": {
+                "widthMm": 210,
+                "heightMm": 297,
+                "orientation": "portrait",
+                "background": "#ffffff"
+              },
+              "components": [
+                {
+                  "id": "only",
+                  "type": "text",
+                  "position": { "x": 5, "y": 5, "width": 40, "height": 8 },
+                  "content": { "value": "Legacy" }
+                }
+              ]
+            }
+            """;
+
+        var result = await engine.GeneratePdfAsync(
+            design,
+            "<Root />",
+            "application/xml; charset=utf-8");
+
+        using var stream = new MemoryStream(result);
+        using var document = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+
+        Assert.Equal(1, document.PageCount);
     }
 }
