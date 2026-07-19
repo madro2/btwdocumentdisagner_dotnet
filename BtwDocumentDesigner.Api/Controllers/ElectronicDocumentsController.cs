@@ -32,6 +32,13 @@ namespace BtwDocumentDesigner.Api.Controllers
             {
                 return BadRequest(exception.Message);
             }
+            catch (TaskCanceledException)
+                when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(
+                    StatusCodes.Status504GatewayTimeout,
+                    "El servicio de documentos electrónicos no respondió dentro del tiempo esperado.");
+            }
             catch (HttpRequestException exception)
             {
                 return StatusCode(
@@ -64,6 +71,13 @@ namespace BtwDocumentDesigner.Api.Controllers
             catch (InvalidOperationException exception)
             {
                 return NotFound(exception.Message);
+            }
+            catch (TaskCanceledException)
+                when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(
+                    StatusCodes.Status504GatewayTimeout,
+                    "El servicio de documentos electrónicos no respondió dentro del tiempo esperado.");
             }
             catch (HttpRequestException exception)
             {
