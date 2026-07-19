@@ -1,0 +1,757 @@
+{
+  "name": "Campos básicos de facturación electrónica",
+  "description": "Campos mínimos definidos en la pestaña Campos Basicos de DiccionarioDeDatosFE.xlsx para fuentes XML o JSON.",
+  "sourceType": "XML/JSON",
+  "fields": [
+    {
+      "name": "Company",
+      "displayName": "Company",
+      "description": "ID compañía (NIT sin dígito de verificación)",
+      "path": "InvcHead.Company",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 1
+    },
+    {
+      "name": "InvoiceType",
+      "displayName": "Invoice Type",
+      "description": "Tipo de factura (InvoiceType, CreditNoteType, DebitNoteType)",
+      "path": "InvcHead.InvoiceType",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 2
+    },
+    {
+      "name": "InvoiceNum",
+      "displayName": "Número interno de la factura",
+      "description": "Numero Interno de la factura",
+      "path": "InvcHead.InvoiceNum",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 3
+    },
+    {
+      "name": "LegalNumber",
+      "displayName": "Número legal de la factura",
+      "description": "Numero legal de la factura de venta (Valido para la resolución de factura electrónica, si el prefijo es alfanumerico el prefijo se debe separar del consecutivo con un guion medio ej, FE1-0001), Nota Crédito (Consecutivo Numérico Interno asignado por la compañía para notas crédito), Nota Débito (Consecutivo Numérico Interno asignado por la compañía para notas Débito",
+      "path": "InvcHead.LegalNumber",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 4
+    },
+    {
+      "name": "InvoiceRef",
+      "displayName": "Factura de referencia",
+      "description": "Numero legal de la factura de venta que se esta cancelando en caso de ser CreditNoteType o DebitNote",
+      "path": "InvcHead.InvoiceRef",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 5
+    },
+    {
+      "name": "InvoiceDate",
+      "displayName": "Fecha de la factura",
+      "description": "Fecha de la factura en formato MM/dd/yyyy HH:mm:ss",
+      "path": "InvcHead.InvoiceDate",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 6
+    },
+    {
+      "name": "DueDate",
+      "displayName": "Fecha de vencimiento",
+      "description": "Fecha de vencimiento de la factura en formato MM/dd/yyyy HH:mm:ss",
+      "path": "InvcHead.DueDate",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 7
+    },
+    {
+      "name": "DspDocSubTotal",
+      "displayName": "Subtotal antes de impuestos",
+      "description": "Valor subtotal de la factura antes de impuestos (Importe bruto) en moneda de la transacción (COP,USD,EUR)",
+      "path": "InvcHead.DspDocSubTotal",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 8
+    },
+    {
+      "name": "DocTaxAmt",
+      "displayName": "Total de impuestos",
+      "description": "Valor total de impuestos aplicado a la factura (IVA) (Impuestos)",
+      "path": "InvcHead.DocTaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 9
+    },
+    {
+      "name": "DocWHTaxAmt",
+      "displayName": "Total de retenciones",
+      "description": "Valor total de retenciones si las tiene (Retenciones)",
+      "path": "InvcHead.DocWHTaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 10
+    },
+    {
+      "name": "DspDocInvoiceAmt",
+      "displayName": "Total de la factura",
+      "description": "Valor total de la factura",
+      "path": "InvcHead.DspDocInvoiceAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 11
+    },
+    {
+      "name": "SubTotal",
+      "displayName": "Sub Total",
+      "description": "Valor subtotal de la factura antes de impuestos (Importe bruto) en moneda de la transacción (COP,USD,EUR)",
+      "path": "InvcHead.SubTotal",
+      "dataType": "Decimal",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 12
+    },
+    {
+      "name": "TaxAmt",
+      "displayName": "Tax Amt",
+      "description": "Valor total de impuestos aplicado a la factura (IVA) (Impuestos)",
+      "path": "InvcHead.TaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 13
+    },
+    {
+      "name": "WHTaxAmt",
+      "displayName": "WHTax Amt",
+      "description": "Valor total de retenciones si las tiene (Retenciones)",
+      "path": "InvcHead.WHTaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 14
+    },
+    {
+      "name": "InvoiceAmt",
+      "displayName": "Invoice Amt",
+      "description": "Valor total de la factura",
+      "path": "InvcHead.InvoiceAmt",
+      "dataType": "Decimal",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 15
+    },
+    {
+      "name": "CurrencyCodeCurrencyID",
+      "displayName": "Currency Code Currency ID",
+      "description": "Código de la Moneda en que se hace la transacción, informar si s la moneda es de extrangera y la factura es de exportacion (COP, USD, EUR, etc.)",
+      "path": "InvcHead.CurrencyCodeCurrencyID",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 16
+    },
+    {
+      "name": "CurrencyCode",
+      "displayName": "Moneda de la transacción",
+      "description": "Código de la Moneda en que se hace la transacción (COP)",
+      "path": "InvcHead.CurrencyCode",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 17
+    },
+    {
+      "name": "Discount",
+      "displayName": "Discount",
+      "description": "Descuento general de la factura",
+      "path": "InvcHead.Discount",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 18
+    },
+    {
+      "name": "DocDiscount",
+      "displayName": "Doc Discount",
+      "description": "Descuento general de la factura en moneda de la transacción (COP,USD,EUR)",
+      "path": "InvcHead.DocDiscount",
+      "dataType": "Decimal",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 19
+    },
+    {
+      "name": "ValidationDateDian",
+      "displayName": "Validation Date Dian",
+      "description": "La fecha de validación de la DIAN en formato yyyy-MM-dd",
+      "path": "InvcHead.ValidationDateDian",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 20
+    },
+    {
+      "name": "ValidationTimeDian",
+      "displayName": "Validation Time Dian",
+      "description": "La hora de validación de la DIAN en formato hh:mm:ss",
+      "path": "InvcHead.ValidationTimeDian",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 21
+    },
+    {
+      "name": "PaymentMeansID_c",
+      "displayName": "Payment Means ID",
+      "description": "Forma de Pago {1=contado; 2=credito}",
+      "path": "InvcHead.PaymentMeansID_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 22
+    },
+    {
+      "name": "PaymentMeansCode_c",
+      "displayName": "Payment Means Code",
+      "description": "Código correspondiente al medio de pago, ver lista de valores.",
+      "path": "InvcHead.PaymentMeansCode_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 23
+    },
+    {
+      "name": "PaymentDurationMeasure",
+      "displayName": "Payment Duration Measure",
+      "description": "Dias de plazo para el pago",
+      "path": "InvcHead.PaymentDurationMeasure",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 24
+    },
+    {
+      "name": "PaymentDueDate",
+      "displayName": "Payment Due Date",
+      "description": "Fecha en la cual es pagamento es debido en formato de fecha yyyy-MM-dd",
+      "path": "InvcHead.PaymentDueDate",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 25
+    },
+    {
+      "name": "InvoicePeriod",
+      "displayName": "Invoice Period",
+      "description": "Periodo de la factura, cuando se trata de nota credito este campo indica el periodo de facturacion que afecta dicha nota credito",
+      "path": "InvcHead.InvoicePeriod",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "InvcHead",
+      "sortOrder": 26
+    },
+    {
+      "name": "OperationType_c",
+      "displayName": "Operation Type",
+      "description": "09 [AIU]\n10 [Estándar *]\n11 [Mandatos]\n12 [Transporte**]\n14 [Notarios]\n15 [Compra Divisas]\n16 [Venta Divisas]\n02 [Factura de exportacion, para manejo interno en btw]",
+      "path": "InvcHead.OperationType_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcHead",
+      "sortOrder": 27
+    },
+    {
+      "name": "InvoiceLine",
+      "displayName": "Invoice Line",
+      "description": "Numero de la linea de la factura",
+      "path": "InvcDtl.InvoiceLine",
+      "dataType": "Int",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 28
+    },
+    {
+      "name": "PartNum",
+      "displayName": "Código del ítem",
+      "description": "Código de parte SKU del item que se esta facturando",
+      "path": "InvcDtl.PartNum",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 29
+    },
+    {
+      "name": "LineDesc",
+      "displayName": "Descripción del ítem",
+      "description": "Descripción del item en la linea de factura",
+      "path": "InvcDtl.LineDesc",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 30
+    },
+    {
+      "name": "SellingShipQty",
+      "displayName": "Cantidad vendida",
+      "description": "Cantidad vendida",
+      "path": "InvcDtl.SellingShipQty",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 31
+    },
+    {
+      "name": "SalesUM",
+      "displayName": "Sales UM",
+      "description": "Unidad de medida de venta, ver lista de valores.",
+      "path": "InvcDtl.SalesUM",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 32
+    },
+    {
+      "name": "UnitPrice",
+      "displayName": "Unit Price",
+      "description": "Precio Unitario en Moneda Local (COP)",
+      "path": "InvcDtl.UnitPrice",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 33
+    },
+    {
+      "name": "DocUnitPrice",
+      "displayName": "Precio unitario",
+      "description": "Precio Unitario en Moneda de la transacción (COP, USD, etc.)",
+      "path": "InvcDtl.DocUnitPrice",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 34
+    },
+    {
+      "name": "ExtPrice",
+      "displayName": "Ext Price",
+      "description": "Precio extendido de la transacción Cantidad * Precio Unitario en moneda local (COP)",
+      "path": "InvcDtl.ExtPrice",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 35
+    },
+    {
+      "name": "DocExtPrice",
+      "displayName": "Total de la línea",
+      "description": "Precio extendido de la transacción Cantidad * Precio Unitario en moneda de la transacción (COP, USD, etc.)",
+      "path": "InvcDtl.DocExtPrice",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 36
+    },
+    {
+      "name": "DiscountPercent",
+      "displayName": "Discount Percent",
+      "description": "% de descuento asignado a la Linea de la factura",
+      "path": "InvcDtl.DiscountPercent",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 37
+    },
+    {
+      "name": "Discount",
+      "displayName": "Discount",
+      "description": "Valor del descuento asignado a la linea en moneda Local (COP)",
+      "path": "InvcDtl.Discount",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 38
+    },
+    {
+      "name": "DocDiscount",
+      "displayName": "Doc Discount",
+      "description": "Valor del descuento asignado a la linea en moneda de la transacción (COP, USD, EUR, etc.)",
+      "path": "InvcDtl.DocDiscount",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 39
+    },
+    {
+      "name": "TotalMiscChrg",
+      "displayName": "Total Misc Chrg",
+      "description": "Valor de cargo míscelaneo asociado a la linea si lo tiene, sino 0, debe ir en moneda local (COP)",
+      "path": "InvcDtl.TotalMiscChrg",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 40
+    },
+    {
+      "name": "DspDocTotalMiscChrg",
+      "displayName": "Dsp Doc Total Misc Chrg",
+      "description": "Valor de cargo míscelaneo asociado a la linea si lo tiene, sino 0, debe ir en moneda de la transacción (COP, USD, EUR, etc.)",
+      "path": "InvcDtl.DspDocTotalMiscChrg",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcDtl",
+      "sortOrder": 41
+    },
+    {
+      "name": "InvoiceLine",
+      "displayName": "Invoice Line",
+      "description": "Numero de linea de la factura, relaciona la linea de la factura que afecta dicho impuesto",
+      "path": "InvcTax.InvoiceLine",
+      "dataType": "Int",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 42
+    },
+    {
+      "name": "IdImpDIAN_c",
+      "displayName": "Id Imp DIAN",
+      "description": "Numero de linea de la factura, relaciona la linea de la factura que afecta dicho impuesto",
+      "path": "InvcTax.IdImpDIAN_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 43
+    },
+    {
+      "name": "RateCode",
+      "displayName": "Rate Code",
+      "description": "Código Interno de la tasa de impuesto (IVA 4, IVA 16, IVA 19, etc), puede ser igual al informado en el campo IdImpDIAN_c",
+      "path": "InvcTax.RateCode",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 44
+    },
+    {
+      "name": "TaxableAmt",
+      "displayName": "Taxable Amt",
+      "description": "Monto sobre el cual se aplicara el impuesto en moneda local (COP)",
+      "path": "InvcTax.TaxableAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 45
+    },
+    {
+      "name": "DocTaxableAmt",
+      "displayName": "Doc Taxable Amt",
+      "description": "Monto sobre el cual se aplicara el impuesto en moneda de la transacción (COP, USD, etc.)",
+      "path": "InvcTax.DocTaxableAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 46
+    },
+    {
+      "name": "TaxAmt",
+      "displayName": "Tax Amt",
+      "description": "Valor del impuesto en moneda local (COP)",
+      "path": "InvcTax.TaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 47
+    },
+    {
+      "name": "DocTaxAmt",
+      "displayName": "Total de impuestos",
+      "description": "Valor del impuesto en moneda de la transacción (COP, USD, etc.)",
+      "path": "InvcTax.DocTaxAmt",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 48
+    },
+    {
+      "name": "Percent",
+      "displayName": "Percent",
+      "description": "Porcentaje de impuesto aplicado",
+      "path": "InvcTax.Percent",
+      "dataType": "Decimal",
+      "cardinality": "1..1",
+      "group": "InvcTax",
+      "sortOrder": 49
+    },
+    {
+      "name": "StateTaxID",
+      "displayName": "NIT del facturador",
+      "description": "NIT sin dígito de verificación",
+      "path": "Company.StateTaxID",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 50
+    },
+    {
+      "name": "Name",
+      "displayName": "Name",
+      "description": "Razon social de la compañía, debe ser igual como esta en el RUT",
+      "path": "Company.Name",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 51
+    },
+    {
+      "name": "FiscalResposability_c",
+      "displayName": "Fiscal Resposability",
+      "description": "Responsabilidad Fiscal, en caso de ser mas de uno separar por punto y coma “;”  \nO-13[Gran contribuyente]\nO-15[Autorretenedor]\nO-23[Agente de retención IVA]\nO-47[Régimen simple de tributación]\nR-99-PN[No responsable]",
+      "path": "Company.FiscalResposability_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 52
+    },
+    {
+      "name": "CompanyType_c",
+      "displayName": "Company Type",
+      "description": "-",
+      "path": "Company.CompanyType_c",
+      "dataType": "Int",
+      "cardinality": "0..1",
+      "group": "Company",
+      "sortOrder": 53
+    },
+    {
+      "name": "StateNum",
+      "displayName": "State Num",
+      "description": "Código de Departamento o Estado, ver lista de valores.",
+      "path": "Company.StateNum",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 54
+    },
+    {
+      "name": "CityNum",
+      "displayName": "City Num",
+      "description": "Código de municipio o ciudad, ver lista de valores.",
+      "path": "Company.CityNum",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 55
+    },
+    {
+      "name": "IdentificationType",
+      "displayName": "Identification Type",
+      "description": "Tipo de identificación  \n11 [Registro civil]\n12 [Tarjeta de identidad]\n13 [Cédula de ciudadanía]\n21 [Tarjeta de extranjería **]\n22 [Cédula de extranjería **]\n31 [NIT]\n41 [Pasaporte]\n42 [Documento de identificación extranjero**]\n47 [PEP (Permiso Especial de Permanencia)]\n48 [PPT (Permiso Protección Temporal)]\n50 [NIT de otro país***]\n91 [NUIP *]",
+      "path": "Company.IdentificationType",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Company",
+      "sortOrder": 56
+    },
+    {
+      "name": "ResaleID",
+      "displayName": "NIT del cliente",
+      "description": "NIT del cliente sin dígito de verificación",
+      "path": "Customer.ResaleID",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Customer",
+      "sortOrder": 57
+    },
+    {
+      "name": "Name",
+      "displayName": "Name",
+      "description": "Nombre o Razón social del cliente",
+      "path": "Customer.Name",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Customer",
+      "sortOrder": 58
+    },
+    {
+      "name": "Address1",
+      "displayName": "Dirección",
+      "description": "Dirección del cliente",
+      "path": "Customer.Address1",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "Customer",
+      "sortOrder": 59
+    },
+    {
+      "name": "EMailAddress",
+      "displayName": "Correo electrónico del cliente",
+      "description": "Dirección de correo electrónico del cliente donde se enviara la factura electrónica, separar con “;” cuando hayan mas de un destinatario",
+      "path": "Customer.EMailAddress",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "Customer",
+      "sortOrder": 60
+    },
+    {
+      "name": "CountryCode",
+      "displayName": "Country Code",
+      "description": "Código del pais del cliente, codigo ISO alfa-2",
+      "path": "Customer.CountryCode",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Customer",
+      "sortOrder": 61
+    },
+    {
+      "name": "FiscalResposability_c",
+      "displayName": "Fiscal Resposability",
+      "description": "Responsabilidad Fiscal, en caso de ser mas de uno separar por punto y coma “;”  \nO-13[Gran contribuyente]\nO-15[Autorretenedor]\nO-23[Agente de retención IVA]\nO-47[Régimen simple de tributación]\nR-99-PN[No responsable]",
+      "path": "Customer.FiscalResposability_c",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Customer",
+      "sortOrder": 62
+    },
+    {
+      "name": "StateNum",
+      "displayName": "State Num",
+      "description": "Código de Departamento o Estado, ver lista de valores.",
+      "path": "Customer.StateNum",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "Customer",
+      "sortOrder": 63
+    },
+    {
+      "name": "CityNum",
+      "displayName": "City Num",
+      "description": "Código de municipio o ciudad, ver lista de valores.",
+      "path": "Customer.CityNum",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "Customer",
+      "sortOrder": 64
+    },
+    {
+      "name": "CompanyType_c",
+      "displayName": "Company Type",
+      "description": "Persona Juridica =1 Persona natural=2",
+      "path": "Customer.CompanyType_c",
+      "dataType": "Int",
+      "cardinality": "0..1",
+      "group": "Customer",
+      "sortOrder": 65
+    },
+    {
+      "name": "IdentificationType",
+      "displayName": "Identification Type",
+      "description": "Tipo de identificación  \n11 [Registro civil]\n12 [Tarjeta de identidad]\n13 [Cédula de ciudadanía]\n21 [Tarjeta de extranjería **]\n22 [Cédula de extranjería **]\n31 [NIT]\n41 [Pasaporte]\n42 [Documento de identificación extranjero**]\n47 [PEP (Permiso Especial de Permanencia)]\n48 [PPT (Permiso Protección Temporal)]\n50 [NIT de otro país***]\n91 [NUIP *]",
+      "path": "Customer.IdentificationType",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "Customer",
+      "sortOrder": 66
+    },
+    {
+      "name": "id",
+      "displayName": "Id",
+      "description": "Responsabilidad Fiscal, en caso de ser mas de uno Se utiliza en los casos donde el Emisor no cuente con los detalles tributarios informados en los primeros tres códigos, aplica para personas jurídicas/personas naturales/consumidor final.\n\nO1 [IVA]\n04 [INC]\nZA [IVA e INC]\nZZ [No aplica *]",
+      "path": "DetailTaxScheme.id",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "DetailTaxScheme",
+      "sortOrder": 67
+    },
+    {
+      "name": "id",
+      "displayName": "Id",
+      "description": "Responsabilidad Fiscal, en caso de ser mas de uno Se utiliza en los casos donde el Adquiriente no cuente con los detalles tributarios informados en los primeros tres códigos, aplica para personas jurídicas/personas naturales/consumidor final.\n\nO1 [IVA]\n04 [INC]\nZA [IVA e INC]\nZZ [No aplica *]",
+      "path": "DetailTaxSchemeCustomer.id",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "DetailTaxSchemeCustomer",
+      "sortOrder": 68
+    },
+    {
+      "name": "Name",
+      "displayName": "Name",
+      "description": "Nombre del campo adicional",
+      "path": "AdditionalTags.Name",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "AdditionalTags",
+      "sortOrder": 69
+    },
+    {
+      "name": "Value",
+      "displayName": "Value",
+      "description": "Valor del campo adicional",
+      "path": "AdditionalTags.Value",
+      "dataType": "String",
+      "cardinality": "1..1",
+      "group": "AdditionalTags",
+      "sortOrder": 70
+    },
+    {
+      "name": "NodoPersonalizado",
+      "displayName": "Nodo Personalizado",
+      "description": "Nombre personalizado para el nodo adicional, podra enviar cuantos nodos sean necesarios sin repetir el nombre del nodo",
+      "path": "AdditionalTags.NodoPersonalizado",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "AdditionalTags",
+      "sortOrder": 71
+    },
+    {
+      "name": "NombreSector",
+      "displayName": "Nombre Sector",
+      "description": "Nombre personalizado del sector al que pertenece su compañía, ejemplo. Salud o Fiducias",
+      "path": "AdditionalTags.NombreSector",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "AdditionalTags",
+      "sortOrder": 72
+    },
+    {
+      "name": "InteroperabilidadPT",
+      "displayName": "Interoperabilidad PT",
+      "description": "Nodo reservado para informacion de Interoperabilidad",
+      "path": "AdditionalTags.InteroperabilidadPT",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "AdditionalTags",
+      "sortOrder": 73
+    },
+    {
+      "name": "URL",
+      "displayName": "URL",
+      "description": "URL para la descargar de los documentos\ncomplementarios a los documentos electrónicos e\ninstrumentos electrónicos",
+      "path": "AdditionalTags.URL",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "AdditionalTags",
+      "sortOrder": 74
+    },
+    {
+      "name": "WS",
+      "displayName": "WS",
+      "description": "Web Service informado por el Facturador\nelectronico",
+      "path": "AdditionalTags.WS",
+      "dataType": "String",
+      "cardinality": "0..1",
+      "group": "AdditionalTags",
+      "sortOrder": 75
+    }
+  ]
+}

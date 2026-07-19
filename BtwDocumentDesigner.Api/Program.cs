@@ -1,6 +1,9 @@
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+builder.Services.Configure<ElectronicDocumentSourceOptions>(
+    builder.Configuration.GetSection(
+        ElectronicDocumentSourceOptions.SectionName));
 
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
@@ -29,6 +32,23 @@ builder.Services.AddScoped<PdfRenderingEngine>();
 builder.Services.AddScoped<IDesignService, DesignService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IGeneratorService, GeneratorService>();
+builder.Services.AddHttpClient<
+    IElectronicDocumentService,
+    BtwDocumentDesigner.Api.Services.ElectronicDocumentService>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<ElectronicDocumentSourceOptions>>()
+            .Value;
+        if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
+        {
+            throw new InvalidOperationException(
+                "ElectronicDocuments:BaseUrl no contiene una URL absoluta válida.");
+        }
+
+        client.BaseAddress = baseUri;
+        client.Timeout = TimeSpan.FromSeconds(45);
+    });
 
 var app = builder.Build();
 
