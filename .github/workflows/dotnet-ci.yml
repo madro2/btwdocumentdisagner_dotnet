@@ -94,18 +94,14 @@ jobs:
             sudo mv /opt/btwdocapi-staging /opt/btwdocapi
             sudo chown -R www-data:www-data /opt/btwdocapi
             sudo chmod +x /opt/btwdocapi/BtwDocumentDesigner.Api
-            # Write env file (overwrite) so DB connection string and runtime are always correct
-            sudo bash -c "cat > /etc/btwdocapi.env" << 'ENVEOF'
-            ASPNETCORE_ENVIRONMENT=Production
-            ASPNETCORE_URLS=http://127.0.0.1:5000
-            DOTNET_ROOT=/home/ubuntu/.dotnet
-            Database__ConnectionString=$DB_CONNECTION_STRING
-            ENVEOF
+            # Write env file using printf to ensure the env var is expanded by the shell
+            printf 'ASPNETCORE_ENVIRONMENT=Production\nASPNETCORE_URLS=http://127.0.0.1:5000\nDOTNET_ROOT=/home/ubuntu/.dotnet\nDatabase__ConnectionString=%s\n' "$DB_CONNECTION_STRING" | sudo /usr/bin/tee /etc/btwdocapi.env > /dev/null
             sudo chmod 600 /etc/btwdocapi.env
+            sudo /usr/bin/cat /etc/btwdocapi.env
             sudo systemctl daemon-reload
             sudo systemctl enable btwdocapi
             sudo systemctl restart btwdocapi
-            sleep 8
+            sleep 10
             sudo systemctl status btwdocapi --no-pager | head -15 || true
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
@@ -129,17 +125,24 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sleep 3
-            # Verify local API on 5000 is up
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ || echo "000")
+            # Wait up to 30s for the service to start
+            for i in 1 2 3 4 5 6; do
+              sleep 5
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://127.0.0.1:5000/ 2>/dev/null || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "OK: API HTTP $STATUS on 5000 (after $((i*5))s)"
+                break
+              fi
+              echo "Waiting for API (attempt $i, status=$STATUS)..."
+            done
             if [ "$STATUS" != "200" ]; then
               echo "::error::API health check failed: HTTP $STATUS"
-              sudo journalctl -u btwdocapi --no-pager -n 30 || true
+              sudo journalctl -u btwdocapi --no-pager -n 40 || true
+              sudo /usr/bin/cat /etc/btwdocapi.env
               exit 1
             fi
-            echo "OK: API HTTP $STATUS on 5000"
             # Verify proxy through nginx on 5005
-            PROXY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5005/DocumentDesignerApi/designs || echo "000")
+            PROXY_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:5005/DocumentDesignerApi/designs || echo "000")
             echo "Proxy HTTP $PROXY_STATUS on 5005/DocumentDesignerApi/designs"
         env:
           DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
