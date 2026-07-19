@@ -29,17 +29,22 @@ public sealed class ElectronicDocumentService : IElectronicDocumentService
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
     }
 
-    public async Task<ElectronicDocumentXml> DownloadXmlAsync(
-        string cufe,
-        CancellationToken cancellationToken = default)
+    public Uri GetSourceUri(string cufe)
     {
         ValidateCufe(cufe);
         var relativePath = _options.XmlErpPathTemplate.Replace(
             "{cufe}",
             Uri.EscapeDataString(cufe),
             StringComparison.OrdinalIgnoreCase);
+        return new Uri(_httpClient.BaseAddress!, relativePath);
+    }
+
+    public async Task<ElectronicDocumentXml> DownloadXmlAsync(
+        string cufe,
+        CancellationToken cancellationToken = default)
+    {
         using var response = await _httpClient.GetAsync(
-            relativePath,
+            GetSourceUri(cufe),
             cancellationToken);
         response.EnsureSuccessStatusCode();
         var responseBytes = await response.Content.ReadAsByteArrayAsync(
