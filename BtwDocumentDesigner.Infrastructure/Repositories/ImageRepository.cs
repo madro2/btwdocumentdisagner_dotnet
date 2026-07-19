@@ -26,6 +26,14 @@ namespace BtwDocumentDesigner.Infrastructure.Repositories
             return image?.ImageData;
         }
 
+        public async Task<byte[]?> GetImageDataByKeyAsync(string key)
+        {
+            var image = await _db.PdfDesignImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.ResourceKey == key);
+            return image?.ImageData;
+        }
+
         public async Task DeleteAsync(PdfDesignImage image)
         {
             _db.PdfDesignImages.Remove(image);

@@ -9,11 +9,16 @@ namespace BtwDocumentDesigner.Application.Services
             _imageRepository = imageRepository;
         }
 
-        public async Task<PdfDesignImage> SaveImageAsync(string fileName, string contentType, byte[] data)
+        public async Task<PdfDesignImage> SaveImageAsync(
+            string fileName,
+            string contentType,
+            byte[] data,
+            string? resourceKey = null)
         {
             var pdfImage = new PdfDesignImage
             {
                 FileName = fileName,
+                ResourceKey = resourceKey,
                 ContentType = contentType,
                 ImageData = data
             };

@@ -5,6 +5,7 @@ namespace BtwDocumentDesigner.Application.Interfaces
         Task AddAsync(PdfDesignImage image);
         Task<PdfDesignImage?> GetByIdAsync(Guid id);
         Task<byte[]?> GetImageDataAsync(Guid id);
+        Task<byte[]?> GetImageDataByKeyAsync(string key);
         Task DeleteAsync(PdfDesignImage image);
     }
 }

@@ -28,4 +28,13 @@
     <ProjectReference Include="..\BtwDocumentDesigner.Shared\BtwDocumentDesigner.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\UtilFiles\design-contract-btw-v3.0.json"
+          Link="Fixtures\design-contract-btw-v3.0.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\UtilFiles\AM-12847.xml"
+          Link="Fixtures\AM-12847.xml"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

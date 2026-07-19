@@ -13,17 +13,23 @@ namespace BtwDocumentDesigner.Api.Controllers
 
         [SwaggerOperation(Summary = "Sube una imagen", Description = "Permite cargar una nueva imagen (logo, firma, etc) para usar en los PDFs.")]
         [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file)
+        public async Task<IActionResult> Upload(
+            IFormFile file,
+            [FromQuery] string? resourceKey = null)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("El archivo de imagen no es v·lido.");
+                return BadRequest("El archivo de imagen no es v√°lido.");
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
 
-            var savedImage = await _imageService.SaveImageAsync(file.FileName, file.ContentType, memoryStream.ToArray());
+            var savedImage = await _imageService.SaveImageAsync(
+                file.FileName,
+                file.ContentType,
+                memoryStream.ToArray(),
+                resourceKey);
 
-            return Ok(new { Id = savedImage.Id });
+            return Ok(new { Id = savedImage.Id, savedImage.ResourceKey });
         }
 
         [SwaggerOperation(Summary = "Obtiene una imagen", Description = "Devuelve el archivo binario de la imagen por su identificador.")]

@@ -11,14 +11,22 @@ namespace BtwDocumentDesigner.Api.Controllers
             _designService = designService;
         }
 
-        [SwaggerOperation(Summary = "Crea un nuevo diseÒo", Description = "Registra un nuevo template de diseÒo de PDF en el sistema.")]
+        [SwaggerOperation(Summary = "Crea un nuevo dise√±o", Description = "Registra un nuevo template de dise√±o de PDF en el sistema.")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PdfDesignTemplate design)
         {
             try
             {
                 var created = await _designService.CreateDesignAsync(design);
-                return Created($"/api/designs/{created.Id}", created);
+                return Created($"/DocumentDesignerApi/Designs/{created.Id}", created);
+            }
+            catch (ContractValidationException ex)
+            {
+                return BadRequest(new
+                {
+                    Error = "Contrato de dise√±o inv√°lido.",
+                    Details = ex.Errors
+                });
             }
             catch (InvalidOperationException ex)
             {
@@ -26,43 +34,54 @@ namespace BtwDocumentDesigner.Api.Controllers
             }
         }
 
-        [SwaggerOperation(Summary = "Obtiene todos los diseÒos", Description = "Devuelve una lista con todos los diseÒos registrados.")]
+        [SwaggerOperation(Summary = "Obtiene todos los dise√±os", Description = "Devuelve una lista con todos los dise√±os registrados.")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             return Ok(await _designService.GetAllDesignsAsync());
         }
 
-        [SwaggerOperation(Summary = "Obtiene un diseÒo por ID", Description = "Busca un diseÒo especÌfico utilizando su identificador ˙nico.")]
+        [SwaggerOperation(Summary = "Obtiene un dise√±o por ID", Description = "Busca un dise√±o espec√≠fico utilizando su identificador √∫nico.")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var design = await _designService.GetDesignByIdAsync(id);
-            return design != null ? Ok(design) : NotFound("DiseÒo no encontrado.");
+            return design != null ? Ok(design) : NotFound("Dise√±o no encontrado.");
         }
 
-        [SwaggerOperation(Summary = "Busca un diseÒo por nombre y versiÛn", Description = "Permite consultar un diseÒo filtrando por su nombre exacto y versiÛn.")]
+        [SwaggerOperation(Summary = "Busca un dise√±o por nombre y versi√≥n", Description = "Permite consultar un dise√±o filtrando por su nombre exacto y versi√≥n.")]
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string name, [FromQuery] int version)
         {
             var design = await _designService.SearchDesignAsync(name, version);
-            return design != null ? Ok(new { Id = design.Id }) : NotFound("DiseÒo no encontrado.");
+            return design != null ? Ok(new { Id = design.Id }) : NotFound("Dise√±o no encontrado.");
         }
 
-        [SwaggerOperation(Summary = "Actualiza un diseÒo existente", Description = "Sobrescribe la configuraciÛn de un diseÒo por su ID.")]
+        [SwaggerOperation(Summary = "Actualiza un dise√±o existente", Description = "Sobrescribe la configuraci√≥n de un dise√±o por su ID.")]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] PdfDesignTemplate updateDesign)
         {
-            var updated = await _designService.UpdateDesignAsync(id, updateDesign);
-            return updated ? NoContent() : NotFound("DiseÒo no encontrado.");
+            try
+            {
+                var updated = await _designService.UpdateDesignAsync(id, updateDesign);
+                return updated ? NoContent() : NotFound("Dise√±o no encontrado.");
+            }
+            catch (ContractValidationException ex)
+            {
+                return BadRequest(new
+                {
+                    Error = "Contrato de dise√±o inv√°lido.",
+                    Details = ex.Errors
+                });
+            }
         }
 
-        [SwaggerOperation(Summary = "Elimina un diseÒo", Description = "Borra un diseÒo del sistema permanentemente por su ID.")]
+        [SwaggerOperation(Summary = "Elimina un dise√±o", Description = "Borra un dise√±o del sistema permanentemente por su ID.")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _designService.DeleteDesignAsync(id);
-            return deleted ? NoContent() : NotFound("DiseÒo no encontrado.");
+            return deleted ? NoContent() : NotFound("Dise√±o no encontrado.");
         }
     }
 }

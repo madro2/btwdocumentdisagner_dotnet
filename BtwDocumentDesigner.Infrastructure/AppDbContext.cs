@@ -23,6 +23,7 @@ namespace BtwDocumentDesigner.Infrastructure
             modelBuilder.Entity<PdfDesignImage>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.ResourceKey).IsUnique();
             });
         }
     }
