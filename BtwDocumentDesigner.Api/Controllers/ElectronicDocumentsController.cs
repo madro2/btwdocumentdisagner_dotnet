@@ -11,6 +11,23 @@ namespace BtwDocumentDesigner.Api.Controllers
             _service = service;
         }
 
+        [HttpGet("{cufe}/source-url")]
+        public ActionResult<ElectronicDocumentSourceResponse> GetSourceUrl(
+            string cufe)
+        {
+            try
+            {
+                return Ok(
+                    new ElectronicDocumentSourceResponse(
+                        cufe,
+                        _service.GetSourceUri(cufe).AbsoluteUri));
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
+        }
+
         [HttpGet("{cufe}/xml")]
         public async Task<ActionResult<ElectronicDocumentXmlResponse>> DownloadXml(
             string cufe,
@@ -98,4 +115,8 @@ namespace BtwDocumentDesigner.Api.Controllers
         string FileName,
         string ContentType,
         string Base64);
+
+    public sealed record ElectronicDocumentSourceResponse(
+        string Cufe,
+        string Url);
 }

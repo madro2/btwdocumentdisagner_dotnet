@@ -1,10 +1,12 @@
 namespace BtwDocumentDesigner.Application.Interfaces
 {
-    public interface IElectronicDocumentService
-    {
-        Task<ElectronicDocumentXml> DownloadXmlAsync(
-            string cufe,
-            CancellationToken cancellationToken = default);
+public interface IElectronicDocumentService
+{
+    Uri GetSourceUri(string cufe);
+
+    Task<ElectronicDocumentXml> DownloadXmlAsync(
+        string cufe,
+        CancellationToken cancellationToken = default);
 
         Task<byte[]> GeneratePdfAsync(
             string cufe,
