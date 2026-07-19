@@ -107,6 +107,7 @@ jobs:
             EnvironmentFile=/etc/btwdocapi.env
             Restart=always
             RestartSec=5
+            KillMode=process
             TimeoutStartSec=120
             TimeoutStopSec=30
 
@@ -145,7 +146,7 @@ jobs:
             sudo rm -rf /var/tmp/btwdocapi-staging
             sudo systemctl enable btwdocapi
             sudo systemctl restart btwdocapi
-            sleep 15
+            sleep 30
             sudo systemctl status btwdocapi --no-pager | head -15 || true
 
       - name: Reload nginx
