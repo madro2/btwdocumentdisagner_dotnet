@@ -19,6 +19,8 @@ public static class DatabaseSeeder
         Guid.Parse("f2000000-0000-0000-0000-000000000002");
     private static readonly Guid BasicFieldsCollectionId =
         Guid.Parse("d1000000-0000-0000-0000-000000000001");
+    private static readonly Guid SystemFieldsCollectionId =
+        Guid.Parse("d1000000-0000-0000-0000-000000000002");
 
     public static async Task SeedAsync(
         AppDbContext db,
@@ -124,6 +126,67 @@ public static class DatabaseSeeder
                 });
             }
         }
+        await db.SaveChangesAsync();
+
+        var collection = await db.DataSourceCollections
+            .Include(item => item.Fields)
+            .SingleOrDefaultAsync(item => item.Id == SystemFieldsCollectionId);
+
+        if (collection is null)
+        {
+            collection = new DataSourceCollection
+            {
+                Id = SystemFieldsCollectionId,
+                CreationDate = DateTime.UtcNow
+            };
+            db.DataSourceCollections.Add(collection);
+        }
+        else
+        {
+            collection.ModificationDate = DateTime.UtcNow;
+        }
+
+        collection.Name = "Fuente de datos del sistema";
+        collection.Description = "Variables globales del sistema para previsualización";
+        collection.SourceType = "System";
+
+        var existingByPath = collection.Fields.ToDictionary(
+            field => field.Path,
+            StringComparer.Ordinal);
+        
+        var seededPaths = defaultValues.Keys
+            .Select(k => $"System.{k}")
+            .ToHashSet(StringComparer.Ordinal);
+
+        var obsoleteFields = collection.Fields
+            .Where(field => !seededPaths.Contains(field.Path))
+            .ToList();
+        
+        if (obsoleteFields.Count > 0)
+        {
+            db.DataSourceFields.RemoveRange(obsoleteFields);
+        }
+
+        int sortOrder = 1;
+        foreach (var key in defaultValues.Keys)
+        {
+            var path = $"System.{key}";
+            if (!existingByPath.TryGetValue(path, out var entity))
+            {
+                entity = new DataSourceField { Path = path };
+                collection.Fields.Add(entity);
+                db.DataSourceFields.Add(entity);
+            }
+
+            entity.Name = key;
+            entity.DisplayName = key;
+            entity.Description = "Variable de sistema";
+            entity.DataType = "String";
+            entity.Cardinality = "one";
+            entity.Group = "Sistema";
+            entity.SortOrder = sortOrder++;
+        }
+
         await db.SaveChangesAsync();
     }
 
