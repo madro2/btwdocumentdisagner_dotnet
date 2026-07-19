@@ -70,6 +70,11 @@ namespace BtwDocumentDesigner.Api.Controllers
             Guid id,
             [FromBody] SaveDataSourceCollectionRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest("El nombre de la colección es obligatorio.");
+            }
+
             var collection = await _db.DataSourceCollections
                 .Include(item => item.Fields)
                 .SingleOrDefaultAsync(item => item.Id == id);
@@ -78,7 +83,14 @@ namespace BtwDocumentDesigner.Api.Controllers
                 return NotFound();
             }
 
-            collection.Name = request.Name.Trim();
+            var name = request.Name.Trim();
+            if (await _db.DataSourceCollections.AnyAsync(
+                item => item.Id != id && item.Name == name))
+            {
+                return Conflict("Ya existe una colección con ese nombre.");
+            }
+
+            collection.Name = name;
             collection.Description = request.Description?.Trim() ?? string.Empty;
             collection.SourceType = request.SourceType?.Trim() ?? "XML/JSON";
             collection.ModificationDate = DateTime.UtcNow;
