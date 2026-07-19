@@ -20,10 +20,10 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore btwdocumental_btwdocumentdisagner_dotnet.slnx
+        run: dotnet restore BtwDocumentDesigner.slnx
 
       - name: Build
-        run: dotnet build btwdocumental_btwdocumentdisagner_dotnet.slnx --no-restore -c Release
+        run: dotnet build BtwDocumentDesigner.slnx --no-restore -c Release
 
       - name: Test
         run: dotnet test BtwDocumentDesigner.Tests/BtwDocumentDesigner.Tests.csproj --no-build -c Release --logger "console;verbosity=normal"
