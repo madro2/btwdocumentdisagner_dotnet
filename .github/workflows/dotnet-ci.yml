@@ -68,6 +68,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             sudo systemctl stop btwdocapi || true
+            sudo rm -rf /opt/btwdocapi-staging
+            sudo mkdir -p /opt/btwdocapi-staging
+            sudo chown deploy:deploy /opt/btwdocapi-staging
 
       - name: Copy build to server
         uses: appleboy/scp-action@master
