@@ -167,6 +167,10 @@ namespace BtwDocumentDesigner.Application.Rendering
         public bool HeaderBold { get; set; }
         public BorderStyle Border { get; set; } = new();
         public HeaderStyle Header { get; set; } = new();
+        public string? BorderPreset { get; set; } = "all";
+        public string? AlternateRowBackground { get; set; }
+        public double HeaderHeightMm { get; set; }
+        public double CellPaddingMm { get; set; }
     }
 
     public sealed class HeaderStyle

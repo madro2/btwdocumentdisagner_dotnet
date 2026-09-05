@@ -244,4 +244,64 @@ public sealed class PdfRenderingEngineTests
         using var docLink = PdfReader.Open(streamLink, PdfDocumentOpenMode.Import);
         Assert.Equal(1, docLink.PageCount);
     }
+    [Fact]
+    public async Task GeneratePdfAsync_RendersCustomizedTableWithBorderPresetAndStriping()
+    {
+        var images = new Mock<IImageRepository>();
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync()).ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
+
+        var designWithTable = """
+            {
+              "schemaVersion": "3.0",
+              "document": { "id": "test-tbl", "name": "Test Tabla Personalizada", "type": "document" },
+              "components": [
+                {
+                  "id": "table-1",
+                  "type": "table",
+                  "position": { "x": 10, "y": 10, "width": 190, "height": 60 },
+                  "style": {
+                    "borderPreset": "horizontal",
+                    "alternateRowBackground": "#f8fafc",
+                    "cellPaddingMm": 1.5,
+                    "border": { "style": "solid", "widthPt": 0.75, "color": "#cbd5e1" },
+                    "header": { "background": "#1e293b", "bold": true, "alignment": "center" }
+                  },
+                  "content": {
+                    "mode": "collection",
+                    "dataPath": "Items",
+                    "rowAlias": "Item"
+                  },
+                  "columns": [
+                    { "id": "col1", "title": "Código", "widthMm": 30, "dataPath": "Item.Code", "alignment": "center" },
+                    { "id": "col2", "title": "Descripción", "widthMm": 110, "dataPath": "Item.Desc", "alignment": "left" },
+                    { "id": "col3", "title": "Total", "widthMm": 50, "dataPath": "Item.Total", "alignment": "right" }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var sampleJson = """
+            {
+              "Items": [
+                { "Code": "A001", "Desc": "Producto A", "Total": "$10,000" },
+                { "Code": "A002", "Desc": "Producto B", "Total": "$25,000" },
+                { "Code": "A003", "Desc": "Producto C", "Total": "$15,000" }
+              ]
+            }
+            """;
+
+        var result = await engine.GeneratePdfAsync(
+            designWithTable,
+            sampleJson,
+            "application/json");
+
+        Assert.NotNull(result);
+        Assert.True(result.Length > 500);
+        using var stream = new MemoryStream(result);
+        using var doc = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+        Assert.Equal(1, doc.PageCount);
+    }
 }

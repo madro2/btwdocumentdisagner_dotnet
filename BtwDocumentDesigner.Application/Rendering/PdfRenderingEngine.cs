@@ -597,8 +597,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 : rect.Height / rows.Count;
             var y = rect.Y;
 
-            foreach (var row in rows)
+            for (var index = 0; index < rows.Count; index++)
             {
+                var row = rows[index];
                 var values = new[]
                 {
                     context.Render(row.Label),
@@ -615,7 +616,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                     columns,
                     values,
                     table,
-                    header: false);
+                    header: false,
+                    titlesOnly: false,
+                    rowIndex: index,
+                    isLastRow: index == rows.Count - 1);
                 y += rowHeight;
             }
         }
@@ -647,7 +651,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                 columns,
                 values,
                 table,
-                header: true);
+                header: true,
+                titlesOnly: false,
+                rowIndex: 0,
+                isLastRow: true);
         }
 
         private static void DrawCollection(
@@ -670,6 +677,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 rowHeight = MmToPt(8);
             }
 
+            var records = context.Collection(table.Content.DataPath);
             DrawTableRow(
                 gfx,
                 rect.X,
@@ -679,9 +687,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 table.Columns.Select(column => column.Title ?? string.Empty).ToArray(),
                 table,
                 header: true,
-                titlesOnly: true);
-
-            var records = context.Collection(table.Content.DataPath);
+                titlesOnly: true,
+                rowIndex: 0,
+                isLastRow: records.Count == 0);
             var alias = table.Content.RowAlias ?? "Row";
             var y = rect.Y + headerHeight;
             for (var index = 0; index < records.Count; index++)
@@ -713,7 +721,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                     columns,
                     values,
                     table,
-                    header: false);
+                    header: false,
+                    titlesOnly: false,
+                    rowIndex: index,
+                    isLastRow: index == records.Count - 1);
                 y += rowHeight;
             }
 
@@ -739,35 +750,89 @@ namespace BtwDocumentDesigner.Application.Rendering
             IReadOnlyList<string> values,
             PdfComponent table,
             bool header,
-            bool titlesOnly = false)
+            bool titlesOnly = false,
+            int rowIndex = 0,
+            bool isLastRow = false)
         {
+            var borderPreset = table.Style.BorderPreset ?? "all";
+            var hasBorder = table.Style.Border.Style != "none" && borderPreset != "none";
+            var pen = hasBorder ? CreatePen(table.Style.Border) : null;
+            var cellPadding = MmToPt(table.Style.CellPaddingMm > 0 ? table.Style.CellPaddingMm : (table.Style.Padding > 0 ? table.Style.Padding : 0.8));
+
+            var startX = x;
+            var totalRowWidth = widths.Sum();
+
             for (var index = 0; index < widths.Count; index++)
             {
                 var cell = new XRect(x, y, widths[index], height);
                 var cellState = gfx.Save();
                 gfx.IntersectClip(cell);
                 var column = table.Columns.ElementAtOrDefault(index);
-                var background = header
-                    ? table.Style.Header.Background
-                    : column?.Style.Background;
-                if (!string.IsNullOrWhiteSpace(background))
+
+                // Background calculation: Header, Alternate row or Column/Default background
+                string? background = null;
+                if (header)
                 {
-                    gfx.DrawRectangle(
-                        new XSolidBrush(ParseColor(background)),
-                        cell);
+                    background = !string.IsNullOrWhiteSpace(table.Style.Header.Background)
+                        ? table.Style.Header.Background
+                        : (!string.IsNullOrWhiteSpace(table.Style.Background) ? table.Style.Background : "#f3f4f6");
+                }
+                else if (rowIndex % 2 == 1 && !string.IsNullOrWhiteSpace(table.Style.AlternateRowBackground))
+                {
+                    background = table.Style.AlternateRowBackground;
+                }
+                else
+                {
+                    background = column?.Style.Background ?? table.Style.Background;
                 }
 
-                if (table.Style.Border.Style != "none")
+                if (!string.IsNullOrWhiteSpace(background))
                 {
-                    gfx.DrawRectangle(CreatePen(table.Style.Border), cell);
+                    gfx.DrawRectangle(new XSolidBrush(ParseColor(background)), cell);
+                }
+
+                // Cell borders according to TableBorderPreset
+                if (pen != null)
+                {
+                    switch (borderPreset)
+                    {
+                        case "all":
+                            gfx.DrawRectangle(pen, cell);
+                            break;
+                        case "horizontal":
+                            // Top border on header or middle rows
+                            gfx.DrawLine(pen, cell.X, cell.Y, cell.Right, cell.Y);
+                            // Bottom border on every row
+                            gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            break;
+                        case "vertical":
+                            gfx.DrawLine(pen, cell.X, cell.Y, cell.X, cell.Bottom);
+                            if (index == widths.Count - 1)
+                            {
+                                gfx.DrawLine(pen, cell.Right, cell.Y, cell.Right, cell.Bottom);
+                            }
+                            break;
+                        case "outer":
+                            if (header || rowIndex == 0) gfx.DrawLine(pen, cell.X, cell.Y, cell.Right, cell.Y);
+                            if (isLastRow) gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            if (index == 0) gfx.DrawLine(pen, cell.X, cell.Y, cell.X, cell.Bottom);
+                            if (index == widths.Count - 1) gfx.DrawLine(pen, cell.Right, cell.Y, cell.Right, cell.Bottom);
+                            break;
+                        case "headerOnly":
+                            if (header)
+                            {
+                                gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            }
+                            break;
+                    }
                 }
 
                 if (header && !titlesOnly)
                 {
                     var titleRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + MmToPt(0.4),
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         cell.Height * 0.48 - MmToPt(0.2));
                     DrawTextInRect(
                         gfx,
@@ -777,9 +842,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                         forceBold: true,
                         forceAlignment: "center");
                     var valueRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + cell.Height * 0.42,
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         cell.Height * 0.54 - MmToPt(0.2));
                     DrawTextInRect(
                         gfx,
@@ -792,9 +857,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 else
                 {
                     var textRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + MmToPt(0.3),
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         Math.Max(0, cell.Height - MmToPt(0.6)));
                     DrawTextInRect(
                         gfx,
