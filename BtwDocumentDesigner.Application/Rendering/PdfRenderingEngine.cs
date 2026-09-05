@@ -399,18 +399,47 @@ namespace BtwDocumentDesigner.Application.Rendering
         private static void DrawBox(
             XGraphics gfx,
             XRect rect,
-            ComponentStyle style)
+            ComponentStyle? style)
         {
-            if (!string.IsNullOrWhiteSpace(style.Background))
-            {
-                gfx.DrawRectangle(
-                    new XSolidBrush(ParseColor(style.Background)),
-                    rect);
-            }
+            var safeStyle = style ?? new ComponentStyle();
+            var border = safeStyle.Border ?? new BorderStyle();
+            var hasBackground = !string.IsNullOrWhiteSpace(safeStyle.Background);
+            var hasBorder = border.Style != "none" && border.WidthPt > 0;
+            var radiusPt = MmToPt(border.RadiusMm);
 
-            if (style.Border.Style != "none" && style.Border.WidthPt > 0)
+            var brush = hasBackground
+                ? new XSolidBrush(ParseColor(safeStyle.Background))
+                : null;
+            var pen = hasBorder
+                ? CreatePen(border)
+                : null;
+
+            if (radiusPt > 0)
             {
-                gfx.DrawRectangle(CreatePen(style.Border), rect);
+                var ellipseSize = new XSize(radiusPt * 2, radiusPt * 2);
+                if (brush != null && pen != null)
+                {
+                    gfx.DrawRoundedRectangle(pen, brush, rect, ellipseSize);
+                }
+                else if (brush != null)
+                {
+                    gfx.DrawRoundedRectangle(brush, rect, ellipseSize);
+                }
+                else if (pen != null)
+                {
+                    gfx.DrawRoundedRectangle(pen, rect, ellipseSize);
+                }
+            }
+            else
+            {
+                if (brush != null)
+                {
+                    gfx.DrawRectangle(brush, rect);
+                }
+                if (pen != null)
+                {
+                    gfx.DrawRectangle(pen, rect);
+                }
             }
         }
 
@@ -769,21 +798,22 @@ namespace BtwDocumentDesigner.Application.Rendering
 
         private static XPen CreatePen(ComponentStyle style) =>
             CreatePen(
-                style.Border.WidthPt > 0
+                style.Border != null && style.Border.WidthPt > 0
                     ? style.Border
                     : new BorderStyle
                     {
-                        Color = style.Color,
-                        WidthPt = 0.5,
-                        Style = style.Border.Style
+                        Color = !string.IsNullOrWhiteSpace(style.Border?.Color) ? style.Border.Color : style.Color,
+                        WidthPt = style.Border?.WidthPt > 0 ? style.Border.WidthPt : 0.5,
+                        Style = style.Border?.Style ?? "solid"
                     });
 
-        private static XPen CreatePen(BorderStyle border)
+        private static XPen CreatePen(BorderStyle? border)
         {
+            var safeBorder = border ?? new BorderStyle();
             var pen = new XPen(
-                ParseColor(border.Color),
-                border.WidthPt > 0 ? border.WidthPt : 0.5);
-            pen.DashStyle = border.Style switch
+                ParseColor(safeBorder.Color),
+                safeBorder.WidthPt > 0 ? safeBorder.WidthPt : 0.5);
+            pen.DashStyle = safeBorder.Style switch
             {
                 "dashed" => XDashStyle.Dash,
                 "dotted" => XDashStyle.Dot,
