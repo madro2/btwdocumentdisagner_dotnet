@@ -769,13 +769,15 @@ namespace BtwDocumentDesigner.Application.Rendering
                 gfx.IntersectClip(cell);
                 var column = table.Columns.ElementAtOrDefault(index);
 
-                // Background calculation: Header, Alternate row or Column/Default background
+                // Background calculation: Header (column specific or table header), Alternate row or Column/Default background
                 string? background = null;
                 if (header)
                 {
-                    background = !string.IsNullOrWhiteSpace(table.Style.Header.Background)
-                        ? table.Style.Header.Background
-                        : (!string.IsNullOrWhiteSpace(table.Style.Background) ? table.Style.Background : "#f3f4f6");
+                    background = !string.IsNullOrWhiteSpace(column?.HeaderBackground)
+                        ? column.HeaderBackground
+                        : (!string.IsNullOrWhiteSpace(table.Style.Header.Background)
+                            ? table.Style.Header.Background
+                            : (!string.IsNullOrWhiteSpace(table.Style.Background) ? table.Style.Background : "#f3f4f6"));
                 }
                 else if (rowIndex % 2 == 1 && !string.IsNullOrWhiteSpace(table.Style.AlternateRowBackground))
                 {
@@ -834,13 +836,25 @@ namespace BtwDocumentDesigner.Application.Rendering
                         cell.Y + MmToPt(0.4),
                         Math.Max(0, cell.Width - cellPadding * 2),
                         cell.Height * 0.48 - MmToPt(0.2));
+                    
+                    var colHeaderStyle = new ComponentStyle
+                    {
+                        FontFamily = table.Style.FontFamily,
+                        FontSizePt = column?.HeaderFontSizePt ?? table.Style.FontSizePt,
+                        Bold = column?.HeaderBold ?? true,
+                        Italic = column?.HeaderItalic ?? false,
+                        Color = column?.HeaderColor ?? table.Style.Color,
+                        Alignment = column?.HeaderAlignment ?? "center"
+                    };
+
                     DrawTextInRect(
                         gfx,
                         column?.Title ?? string.Empty,
                         titleRect,
-                        table.Style,
-                        forceBold: true,
-                        forceAlignment: "center");
+                        colHeaderStyle,
+                        forceBold: colHeaderStyle.Bold,
+                        forceAlignment: colHeaderStyle.Alignment);
+
                     var valueRect = new XRect(
                         cell.X + cellPadding,
                         cell.Y + cell.Height * 0.42,
@@ -861,21 +875,41 @@ namespace BtwDocumentDesigner.Application.Rendering
                         cell.Y + MmToPt(0.3),
                         Math.Max(0, cell.Width - cellPadding * 2),
                         Math.Max(0, cell.Height - MmToPt(0.6)));
+
+                    var textStyle = table.Style;
+                    bool bold = false;
+                    string? alignment = null;
+
+                    if (header)
+                    {
+                        bold = column?.HeaderBold ?? (table.Style.Header.Bold || true);
+                        alignment = column?.HeaderAlignment ?? table.Style.Header.Alignment;
+                        if (!string.IsNullOrWhiteSpace(column?.HeaderColor) || column?.HeaderFontSizePt > 0 || column?.HeaderItalic == true)
+                        {
+                            textStyle = new ComponentStyle
+                            {
+                                FontFamily = table.Style.FontFamily,
+                                FontSizePt = column?.HeaderFontSizePt ?? table.Style.FontSizePt,
+                                Bold = bold,
+                                Italic = column?.HeaderItalic ?? false,
+                                Color = column?.HeaderColor ?? table.Style.Color,
+                                Alignment = alignment ?? "center"
+                            };
+                        }
+                    }
+                    else
+                    {
+                        bold = column?.Style.Bold == true;
+                        alignment = column?.Alignment ?? column?.Style.Alignment ?? table.Style.Alignment;
+                    }
+
                     DrawTextInRect(
                         gfx,
                         values.ElementAtOrDefault(index) ?? string.Empty,
                         textRect,
-                        table.Style,
-                        forceBold:
-                            header
-                            || table.Style.Header.Bold
-                            || column?.Style.Bold == true,
-                        forceAlignment:
-                            header
-                                ? table.Style.Header.Alignment
-                                : column?.Alignment
-                                    ?? column?.Style.Alignment
-                                    ?? table.Style.Alignment);
+                        textStyle,
+                        forceBold: bold,
+                        forceAlignment: alignment);
                 }
 
                 gfx.Restore(cellState);

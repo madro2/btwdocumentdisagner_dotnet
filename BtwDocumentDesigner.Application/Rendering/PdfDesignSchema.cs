@@ -115,6 +115,14 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string? Alignment { get; set; }
         public ComponentStyle Style { get; set; } = new();
         public FallbackDefinition? Fallback { get; set; }
+        
+        // Personalización de columna de encabezado
+        public string? HeaderBackground { get; set; }
+        public string? HeaderColor { get; set; }
+        public string? HeaderAlignment { get; set; }
+        public bool? HeaderBold { get; set; }
+        public bool? HeaderItalic { get; set; }
+        public double? HeaderFontSizePt { get; set; }
     }
 
     public sealed class FallbackDefinition
