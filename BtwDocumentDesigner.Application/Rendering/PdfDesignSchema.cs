@@ -154,6 +154,7 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string FontFamily { get; set; } = "Arial";
         public double FontSizePt { get; set; } = 10;
         public bool Bold { get; set; }
+        public bool Italic { get; set; }
         public bool Underline { get; set; }
         public string Alignment { get; set; } = "left";
         public string VerticalAlignment { get; set; } = "top";

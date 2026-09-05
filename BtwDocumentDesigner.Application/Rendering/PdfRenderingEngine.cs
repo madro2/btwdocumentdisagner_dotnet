@@ -238,6 +238,12 @@ namespace BtwDocumentDesigner.Application.Rendering
                     case "pageNumber":
                         DrawText(gfx, component, renderRect, context);
                         break;
+                    case "link":
+                        DrawLink(gfx, component, renderRect, context);
+                        break;
+                    case "barcode":
+                        DrawBarcode(gfx, component, renderRect, context);
+                        break;
                     case "image":
                     case "qrCode":
                         await DrawImage(gfx, component, renderRect, context);
@@ -307,6 +313,10 @@ namespace BtwDocumentDesigner.Application.Rendering
             var fontStyle = (forceBold ?? safeStyle.Bold)
                 ? XFontStyleEx.Bold
                 : XFontStyleEx.Regular;
+            if (safeStyle.Italic)
+            {
+                fontStyle |= XFontStyleEx.Italic;
+            }
             if (safeStyle.Underline)
             {
                 fontStyle |= XFontStyleEx.Underline;
@@ -385,6 +395,108 @@ namespace BtwDocumentDesigner.Application.Rendering
                 image.PointHeight,
                 component.Content.Fit ?? component.Style.Fit);
             gfx.DrawImage(image, target);
+        }
+
+        private static void DrawLink(
+            XGraphics gfx,
+            PdfComponent component,
+            XRect rect,
+            BindingContext context)
+        {
+            var content = component.Content ?? new ComponentContent();
+            var text = context.Render(content.Value);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = context.Render(content.DefaultValue);
+            }
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = "Enlace";
+            }
+
+            var linkStyle = component.Style ?? new ComponentStyle();
+            if (string.IsNullOrWhiteSpace(linkStyle.Color) || linkStyle.Color == "#000000")
+            {
+                linkStyle.Color = "#1d4ed8";
+            }
+            linkStyle.Underline = true;
+
+            text = RepairMojibake(text);
+            DrawTextInRect(gfx, text, rect, linkStyle);
+        }
+
+        private static void DrawBarcode(
+            XGraphics gfx,
+            PdfComponent component,
+            XRect rect,
+            BindingContext context)
+        {
+            var content = component.Content ?? new ComponentContent();
+            var rawValue = context.Render(content.Value ?? Wrap(content.DataPath));
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                rawValue = context.Render(content.DefaultValue);
+            }
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                rawValue = "1234567890";
+            }
+
+            // Renderizado vectorial estándar de código de barras
+            var style = component.Style ?? new ComponentStyle();
+            if (!string.IsNullOrWhiteSpace(style.Background))
+            {
+                gfx.DrawRectangle(new XSolidBrush(ParseColor(style.Background)), rect);
+            }
+
+            var padding = MmToPt(style.Padding > 0 ? style.Padding : 1);
+            var barcodeRect = new XRect(
+                rect.X + padding,
+                rect.Y + padding,
+                Math.Max(0, rect.Width - padding * 2),
+                Math.Max(0, rect.Height - padding * 2));
+
+            if (barcodeRect.Width <= 0 || barcodeRect.Height <= 0) return;
+
+            var textHeight = Math.Min(MmToPt(3.5), barcodeRect.Height * 0.28);
+            var barsHeight = barcodeRect.Height - textHeight;
+
+            // Generar patrón reproducible basado en el hash del valor
+            var barBrush = new XSolidBrush(ParseColor(style.Color));
+            var hash = Math.Abs(rawValue.GetHashCode());
+            var numBars = Math.Clamp((int)(barcodeRect.Width / 1.8), 24, 70);
+            var barWidth = barcodeRect.Width / numBars;
+
+            for (int i = 0; i < numBars; i++)
+            {
+                // Alternar barras con anchos variables basados en dígitos/caracteres
+                bool isBar = (i % 2 == 0) || ((hash >> (i % 28)) & 1) == 1;
+                if (isBar && i > 1 && i < numBars - 2)
+                {
+                    gfx.DrawRectangle(
+                        barBrush,
+                        barcodeRect.X + (i * barWidth),
+                        barcodeRect.Y,
+                        barWidth * 0.85,
+                        barsHeight);
+                }
+            }
+
+            // Dibuja barras delimitadoras de inicio y fin estándar
+            gfx.DrawRectangle(barBrush, barcodeRect.X, barcodeRect.Y, barWidth * 1.2, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.X + (barWidth * 2), barcodeRect.Y, barWidth * 0.8, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.Right - (barWidth * 3), barcodeRect.Y, barWidth * 0.8, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.Right - barWidth, barcodeRect.Y, barWidth * 1.2, barsHeight);
+
+            // Texto inferior legible por humanos
+            var font = CreateFont("Arial", 7, XFontStyleEx.Regular);
+            var textRect = new XRect(barcodeRect.X, barcodeRect.Y + barsHeight + 1, barcodeRect.Width, textHeight);
+            var format = new XStringFormat
+            {
+                Alignment = XStringAlignment.Center,
+                LineAlignment = XLineAlignment.Center
+            };
+            gfx.DrawString(rawValue, font, barBrush, textRect, format);
         }
 
         private static void DrawLine(

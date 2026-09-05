@@ -202,4 +202,46 @@ public sealed class PdfRenderingEngineTests
         using var document = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
         Assert.Equal(1, document.PageCount);
     }
+
+    [Fact]
+    public async Task GeneratePdfAsync_RendersLinkAndBarcodeCorrectly()
+    {
+        var images = new Mock<IImageRepository>();
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync()).ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
+
+        var designWithLinkAndBarcode = """
+            {
+              "schemaVersion": "3.0",
+              "document": { "id": "test-lb", "name": "Test Link y Barcode", "type": "document" },
+              "components": [
+                {
+                  "id": "link-1",
+                  "type": "link",
+                  "position": { "x": 10, "y": 10, "width": 60, "height": 10 },
+                  "content": { "value": "Visitar BTW" },
+                  "style": { "italic": true }
+                },
+                {
+                  "id": "barcode-1",
+                  "type": "barcode",
+                  "position": { "x": 10, "y": 25, "width": 70, "height": 20 },
+                  "content": { "value": "7701234567890" }
+                }
+              ]
+            }
+            """;
+
+        var result = await engine.GeneratePdfAsync(
+            designWithLinkAndBarcode,
+            "{}",
+            "application/json");
+
+        Assert.NotNull(result);
+        Assert.True(result.Length > 200);
+        using var streamLink = new MemoryStream(result);
+        using var docLink = PdfReader.Open(streamLink, PdfDocumentOpenMode.Import);
+        Assert.Equal(1, docLink.PageCount);
+    }
 }
