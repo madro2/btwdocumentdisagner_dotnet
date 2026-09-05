@@ -167,4 +167,39 @@ public sealed class PdfRenderingEngineTests
 
         Assert.Equal(1, document.PageCount);
     }
+
+    [Fact]
+    public async Task GeneratePdfAsync_SupportsIncompleteDraftDesign()
+    {
+        var images = new Mock<IImageRepository>();
+        var systemDefaults = new Mock<ISystemDefaultValueRepository>();
+        systemDefaults.Setup(x => x.GetAllAsync()).ReturnsAsync(new Dictionary<string, string>());
+        var engine = new PdfRenderingEngine(images.Object, systemDefaults.Object);
+
+        // Contrato incompleto: sin page settings completas, componente sin style ni content definidos
+        var draftDesign = """
+            {
+              "schemaVersion": "3.0",
+              "document": { "id": "draft-1", "name": "Borrador Incompleto", "type": "document" },
+              "components": [
+                {
+                  "id": "draft-text",
+                  "type": "text",
+                  "position": { "x": 10, "y": 10, "width": 50, "height": 10 }
+                }
+              ]
+            }
+            """;
+
+        var result = await engine.GeneratePdfAsync(
+            draftDesign,
+            "{}",
+            "application/json");
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        using var stream = new MemoryStream(result);
+        using var document = PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+        Assert.Equal(1, document.PageCount);
+    }
 }

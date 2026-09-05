@@ -59,7 +59,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 using var gfx = XGraphics.FromPdfPage(page);
 
                 var pageBrush = new XSolidBrush(
-                    ParseColor(designPage.Page.Background));
+                    ParseColor(designPage.Page?.Background));
                 gfx.DrawRectangle(
                     pageBrush,
                     0,
@@ -67,12 +67,13 @@ namespace BtwDocumentDesigner.Application.Rendering
                     page.Width.Point,
                     page.Height.Point);
 
+                var components = designPage.Components ?? new List<PdfComponent>();
                 var rootPositions = ResolveRootPositions(
-                    designPage.Components,
+                    components,
                     context);
                 await RenderComponents(
                     gfx,
-                    designPage.Components,
+                    components,
                     context.WithPage(index + 1, totalPages),
                     rootPositions);
             }
@@ -98,21 +99,22 @@ namespace BtwDocumentDesigner.Application.Rendering
                 new PdfDesignPage
                 {
                     Id = "page-1",
-                    Page = schema.Page,
-                    Components = schema.Components
+                    Page = schema.Page ?? new PageSettings(),
+                    Components = schema.Components ?? new List<PdfComponent>()
                 }
             ];
         }
 
         private static PdfPage AddPage(
             PdfDocument document,
-            PageSettings settings)
+            PageSettings? settings)
         {
             var page = document.AddPage();
-            var width = settings.WidthMm > 0 ? settings.WidthMm : 210;
-            var height = settings.HeightMm > 0 ? settings.HeightMm : 297;
+            var safeSettings = settings ?? new PageSettings();
+            var width = safeSettings.WidthMm > 0 ? safeSettings.WidthMm : 210;
+            var height = safeSettings.HeightMm > 0 ? safeSettings.HeightMm : 297;
             var landscape = string.Equals(
-                settings.Orientation,
+                safeSettings.Orientation,
                 "landscape",
                 StringComparison.OrdinalIgnoreCase);
 
@@ -270,53 +272,55 @@ namespace BtwDocumentDesigner.Application.Rendering
             XRect rect,
             BindingContext context)
         {
+            var content = component.Content ?? new ComponentContent();
             var template = component.Type == "pageNumber"
-                ? component.Content.Format
-                : component.Content.Value;
+                ? content.Format
+                : content.Value;
             var text = context.Render(template);
             if (string.IsNullOrWhiteSpace(text))
             {
-                text = context.Render(component.Content.DefaultValue);
+                text = context.Render(content.DefaultValue);
             }
 
             text = RepairMojibake(text);
-            DrawTextInRect(gfx, text, rect, component.Style);
+            DrawTextInRect(gfx, text, rect, component.Style ?? new ComponentStyle());
         }
 
         private static void DrawTextInRect(
             XGraphics gfx,
             string text,
             XRect rect,
-            ComponentStyle style,
+            ComponentStyle? style,
             bool? forceBold = null,
             string? forceAlignment = null)
         {
+            var safeStyle = style ?? new ComponentStyle();
             text = RepairMojibake(text);
-            if (!string.IsNullOrWhiteSpace(style.Background))
+            if (!string.IsNullOrWhiteSpace(safeStyle.Background))
             {
                 gfx.DrawRectangle(
-                    new XSolidBrush(ParseColor(style.Background)),
+                    new XSolidBrush(ParseColor(safeStyle.Background)),
                     rect);
             }
 
-            var fontSize = style.FontSizePt > 0 ? style.FontSizePt : 10;
-            var fontStyle = (forceBold ?? style.Bold)
+            var fontSize = safeStyle.FontSizePt > 0 ? safeStyle.FontSizePt : 10;
+            var fontStyle = (forceBold ?? safeStyle.Bold)
                 ? XFontStyleEx.Bold
                 : XFontStyleEx.Regular;
-            if (style.Underline)
+            if (safeStyle.Underline)
             {
                 fontStyle |= XFontStyleEx.Underline;
             }
 
-            var font = CreateFont(style.FontFamily, fontSize, fontStyle);
-            var brush = new XSolidBrush(ParseColor(style.Color));
-            var padding = MmToPt(style.Padding);
+            var font = CreateFont(safeStyle.FontFamily, fontSize, fontStyle);
+            var brush = new XSolidBrush(ParseColor(safeStyle.Color));
+            var padding = MmToPt(safeStyle.Padding);
             var contentRect = new XRect(
                 rect.X + padding,
                 rect.Y + padding,
                 Math.Max(0, rect.Width - padding * 2),
                 Math.Max(0, rect.Height - padding * 2));
-            var alignment = forceAlignment ?? style.Alignment;
+            var alignment = forceAlignment ?? safeStyle.Alignment;
             if (
                 !text.Any(char.IsWhiteSpace)
                 && gfx.MeasureString(text, font).Width > contentRect.Width
@@ -342,7 +346,7 @@ namespace BtwDocumentDesigner.Application.Rendering
             var format = new XStringFormat
             {
                 Alignment = ToStringAlignment(alignment),
-                LineAlignment = ToLineAlignment(style.VerticalAlignment)
+                LineAlignment = ToLineAlignment(safeStyle.VerticalAlignment)
             };
             gfx.DrawString(text, font, brush, contentRect, format);
         }

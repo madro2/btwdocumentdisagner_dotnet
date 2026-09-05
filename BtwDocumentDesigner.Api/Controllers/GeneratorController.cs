@@ -42,6 +42,37 @@ namespace BtwDocumentDesigner.Api.Controllers
                 return BadRequest($"Error generando el PDF: {ex.Message}");
             }
         }
+
+        [SwaggerOperation(Summary = "Genera un PDF directo desde la plantilla JSON (incluso incompleta o en borrador)", Description = "Recibe el contrato del diseño y el payload, y devuelve el archivo PDF generado sin requerir que el diseño esté previamente guardado.")]
+        [HttpPost("preview-direct")]
+        public async Task<IActionResult> PreviewDirect([FromBody] DirectPdfPreviewRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.DesignJson))
+                {
+                    return BadRequest("La plantilla JSON (designJson) es obligatoria.");
+                }
+
+                string payload = string.IsNullOrWhiteSpace(request.Payload) ? "{}" : request.Payload;
+                string contentType = string.IsNullOrWhiteSpace(request.ContentType) ? "application/json" : request.ContentType;
+
+                var pdfBytes = await _generatorService.GeneratePdfDirectAsync(request.DesignJson, payload, contentType);
+                return File(pdfBytes, "application/pdf", $"Preview_{DateTime.UtcNow.Ticks}.pdf");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generando la vista previa del PDF directo.");
+                return BadRequest($"Error generando el PDF: {ex.Message}");
+            }
+        }
+    }
+
+    public sealed class DirectPdfPreviewRequest
+    {
+        public string DesignJson { get; set; } = string.Empty;
+        public string? Payload { get; set; }
+        public string? ContentType { get; set; }
     }
 }
 
