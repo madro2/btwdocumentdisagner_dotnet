@@ -115,6 +115,14 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string? Alignment { get; set; }
         public ComponentStyle Style { get; set; } = new();
         public FallbackDefinition? Fallback { get; set; }
+        
+        // Personalización de columna de encabezado
+        public string? HeaderBackground { get; set; }
+        public string? HeaderColor { get; set; }
+        public string? HeaderAlignment { get; set; }
+        public bool? HeaderBold { get; set; }
+        public bool? HeaderItalic { get; set; }
+        public double? HeaderFontSizePt { get; set; }
     }
 
     public sealed class FallbackDefinition
@@ -154,6 +162,7 @@ namespace BtwDocumentDesigner.Application.Rendering
         public string FontFamily { get; set; } = "Arial";
         public double FontSizePt { get; set; } = 10;
         public bool Bold { get; set; }
+        public bool Italic { get; set; }
         public bool Underline { get; set; }
         public string Alignment { get; set; } = "left";
         public string VerticalAlignment { get; set; } = "top";
@@ -166,6 +175,10 @@ namespace BtwDocumentDesigner.Application.Rendering
         public bool HeaderBold { get; set; }
         public BorderStyle Border { get; set; } = new();
         public HeaderStyle Header { get; set; } = new();
+        public string? BorderPreset { get; set; } = "all";
+        public string? AlternateRowBackground { get; set; }
+        public double HeaderHeightMm { get; set; }
+        public double CellPaddingMm { get; set; }
     }
 
     public sealed class HeaderStyle

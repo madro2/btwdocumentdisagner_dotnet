@@ -59,7 +59,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 using var gfx = XGraphics.FromPdfPage(page);
 
                 var pageBrush = new XSolidBrush(
-                    ParseColor(designPage.Page.Background));
+                    ParseColor(designPage.Page?.Background));
                 gfx.DrawRectangle(
                     pageBrush,
                     0,
@@ -67,12 +67,13 @@ namespace BtwDocumentDesigner.Application.Rendering
                     page.Width.Point,
                     page.Height.Point);
 
+                var components = designPage.Components ?? new List<PdfComponent>();
                 var rootPositions = ResolveRootPositions(
-                    designPage.Components,
+                    components,
                     context);
                 await RenderComponents(
                     gfx,
-                    designPage.Components,
+                    components,
                     context.WithPage(index + 1, totalPages),
                     rootPositions);
             }
@@ -98,21 +99,22 @@ namespace BtwDocumentDesigner.Application.Rendering
                 new PdfDesignPage
                 {
                     Id = "page-1",
-                    Page = schema.Page,
-                    Components = schema.Components
+                    Page = schema.Page ?? new PageSettings(),
+                    Components = schema.Components ?? new List<PdfComponent>()
                 }
             ];
         }
 
         private static PdfPage AddPage(
             PdfDocument document,
-            PageSettings settings)
+            PageSettings? settings)
         {
             var page = document.AddPage();
-            var width = settings.WidthMm > 0 ? settings.WidthMm : 210;
-            var height = settings.HeightMm > 0 ? settings.HeightMm : 297;
+            var safeSettings = settings ?? new PageSettings();
+            var width = safeSettings.WidthMm > 0 ? safeSettings.WidthMm : 210;
+            var height = safeSettings.HeightMm > 0 ? safeSettings.HeightMm : 297;
             var landscape = string.Equals(
-                settings.Orientation,
+                safeSettings.Orientation,
                 "landscape",
                 StringComparison.OrdinalIgnoreCase);
 
@@ -236,6 +238,12 @@ namespace BtwDocumentDesigner.Application.Rendering
                     case "pageNumber":
                         DrawText(gfx, component, renderRect, context);
                         break;
+                    case "link":
+                        DrawLink(gfx, component, renderRect, context);
+                        break;
+                    case "barcode":
+                        DrawBarcode(gfx, component, renderRect, context);
+                        break;
                     case "image":
                     case "qrCode":
                         await DrawImage(gfx, component, renderRect, context);
@@ -270,53 +278,59 @@ namespace BtwDocumentDesigner.Application.Rendering
             XRect rect,
             BindingContext context)
         {
+            var content = component.Content ?? new ComponentContent();
             var template = component.Type == "pageNumber"
-                ? component.Content.Format
-                : component.Content.Value;
+                ? content.Format
+                : content.Value;
             var text = context.Render(template);
             if (string.IsNullOrWhiteSpace(text))
             {
-                text = context.Render(component.Content.DefaultValue);
+                text = context.Render(content.DefaultValue);
             }
 
             text = RepairMojibake(text);
-            DrawTextInRect(gfx, text, rect, component.Style);
+            DrawTextInRect(gfx, text, rect, component.Style ?? new ComponentStyle());
         }
 
         private static void DrawTextInRect(
             XGraphics gfx,
             string text,
             XRect rect,
-            ComponentStyle style,
+            ComponentStyle? style,
             bool? forceBold = null,
             string? forceAlignment = null)
         {
+            var safeStyle = style ?? new ComponentStyle();
             text = RepairMojibake(text);
-            if (!string.IsNullOrWhiteSpace(style.Background))
+            if (!string.IsNullOrWhiteSpace(safeStyle.Background))
             {
                 gfx.DrawRectangle(
-                    new XSolidBrush(ParseColor(style.Background)),
+                    new XSolidBrush(ParseColor(safeStyle.Background)),
                     rect);
             }
 
-            var fontSize = style.FontSizePt > 0 ? style.FontSizePt : 10;
-            var fontStyle = (forceBold ?? style.Bold)
+            var fontSize = safeStyle.FontSizePt > 0 ? safeStyle.FontSizePt : 10;
+            var fontStyle = (forceBold ?? safeStyle.Bold)
                 ? XFontStyleEx.Bold
                 : XFontStyleEx.Regular;
-            if (style.Underline)
+            if (safeStyle.Italic)
+            {
+                fontStyle |= XFontStyleEx.Italic;
+            }
+            if (safeStyle.Underline)
             {
                 fontStyle |= XFontStyleEx.Underline;
             }
 
-            var font = CreateFont(style.FontFamily, fontSize, fontStyle);
-            var brush = new XSolidBrush(ParseColor(style.Color));
-            var padding = MmToPt(style.Padding);
+            var font = CreateFont(safeStyle.FontFamily, fontSize, fontStyle);
+            var brush = new XSolidBrush(ParseColor(safeStyle.Color));
+            var padding = MmToPt(safeStyle.Padding);
             var contentRect = new XRect(
                 rect.X + padding,
                 rect.Y + padding,
                 Math.Max(0, rect.Width - padding * 2),
                 Math.Max(0, rect.Height - padding * 2));
-            var alignment = forceAlignment ?? style.Alignment;
+            var alignment = forceAlignment ?? safeStyle.Alignment;
             if (
                 !text.Any(char.IsWhiteSpace)
                 && gfx.MeasureString(text, font).Width > contentRect.Width
@@ -342,7 +356,7 @@ namespace BtwDocumentDesigner.Application.Rendering
             var format = new XStringFormat
             {
                 Alignment = ToStringAlignment(alignment),
-                LineAlignment = ToLineAlignment(style.VerticalAlignment)
+                LineAlignment = ToLineAlignment(safeStyle.VerticalAlignment)
             };
             gfx.DrawString(text, font, brush, contentRect, format);
         }
@@ -383,6 +397,108 @@ namespace BtwDocumentDesigner.Application.Rendering
             gfx.DrawImage(image, target);
         }
 
+        private static void DrawLink(
+            XGraphics gfx,
+            PdfComponent component,
+            XRect rect,
+            BindingContext context)
+        {
+            var content = component.Content ?? new ComponentContent();
+            var text = context.Render(content.Value);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = context.Render(content.DefaultValue);
+            }
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                text = "Enlace";
+            }
+
+            var linkStyle = component.Style ?? new ComponentStyle();
+            if (string.IsNullOrWhiteSpace(linkStyle.Color) || linkStyle.Color == "#000000")
+            {
+                linkStyle.Color = "#1d4ed8";
+            }
+            linkStyle.Underline = true;
+
+            text = RepairMojibake(text);
+            DrawTextInRect(gfx, text, rect, linkStyle);
+        }
+
+        private static void DrawBarcode(
+            XGraphics gfx,
+            PdfComponent component,
+            XRect rect,
+            BindingContext context)
+        {
+            var content = component.Content ?? new ComponentContent();
+            var rawValue = context.Render(content.Value ?? Wrap(content.DataPath));
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                rawValue = context.Render(content.DefaultValue);
+            }
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                rawValue = "1234567890";
+            }
+
+            // Renderizado vectorial estándar de código de barras
+            var style = component.Style ?? new ComponentStyle();
+            if (!string.IsNullOrWhiteSpace(style.Background))
+            {
+                gfx.DrawRectangle(new XSolidBrush(ParseColor(style.Background)), rect);
+            }
+
+            var padding = MmToPt(style.Padding > 0 ? style.Padding : 1);
+            var barcodeRect = new XRect(
+                rect.X + padding,
+                rect.Y + padding,
+                Math.Max(0, rect.Width - padding * 2),
+                Math.Max(0, rect.Height - padding * 2));
+
+            if (barcodeRect.Width <= 0 || barcodeRect.Height <= 0) return;
+
+            var textHeight = Math.Min(MmToPt(3.5), barcodeRect.Height * 0.28);
+            var barsHeight = barcodeRect.Height - textHeight;
+
+            // Generar patrón reproducible basado en el hash del valor
+            var barBrush = new XSolidBrush(ParseColor(style.Color));
+            var hash = Math.Abs(rawValue.GetHashCode());
+            var numBars = Math.Clamp((int)(barcodeRect.Width / 1.8), 24, 70);
+            var barWidth = barcodeRect.Width / numBars;
+
+            for (int i = 0; i < numBars; i++)
+            {
+                // Alternar barras con anchos variables basados en dígitos/caracteres
+                bool isBar = (i % 2 == 0) || ((hash >> (i % 28)) & 1) == 1;
+                if (isBar && i > 1 && i < numBars - 2)
+                {
+                    gfx.DrawRectangle(
+                        barBrush,
+                        barcodeRect.X + (i * barWidth),
+                        barcodeRect.Y,
+                        barWidth * 0.85,
+                        barsHeight);
+                }
+            }
+
+            // Dibuja barras delimitadoras de inicio y fin estándar
+            gfx.DrawRectangle(barBrush, barcodeRect.X, barcodeRect.Y, barWidth * 1.2, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.X + (barWidth * 2), barcodeRect.Y, barWidth * 0.8, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.Right - (barWidth * 3), barcodeRect.Y, barWidth * 0.8, barsHeight);
+            gfx.DrawRectangle(barBrush, barcodeRect.Right - barWidth, barcodeRect.Y, barWidth * 1.2, barsHeight);
+
+            // Texto inferior legible por humanos
+            var font = CreateFont("Arial", 7, XFontStyleEx.Regular);
+            var textRect = new XRect(barcodeRect.X, barcodeRect.Y + barsHeight + 1, barcodeRect.Width, textHeight);
+            var format = new XStringFormat
+            {
+                Alignment = XStringAlignment.Center,
+                LineAlignment = XLineAlignment.Center
+            };
+            gfx.DrawString(rawValue, font, barBrush, textRect, format);
+        }
+
         private static void DrawLine(
             XGraphics gfx,
             PdfComponent component,
@@ -395,18 +511,47 @@ namespace BtwDocumentDesigner.Application.Rendering
         private static void DrawBox(
             XGraphics gfx,
             XRect rect,
-            ComponentStyle style)
+            ComponentStyle? style)
         {
-            if (!string.IsNullOrWhiteSpace(style.Background))
-            {
-                gfx.DrawRectangle(
-                    new XSolidBrush(ParseColor(style.Background)),
-                    rect);
-            }
+            var safeStyle = style ?? new ComponentStyle();
+            var border = safeStyle.Border ?? new BorderStyle();
+            var hasBackground = !string.IsNullOrWhiteSpace(safeStyle.Background);
+            var hasBorder = border.Style != "none" && border.WidthPt > 0;
+            var radiusPt = MmToPt(border.RadiusMm);
 
-            if (style.Border.Style != "none" && style.Border.WidthPt > 0)
+            var brush = hasBackground
+                ? new XSolidBrush(ParseColor(safeStyle.Background))
+                : null;
+            var pen = hasBorder
+                ? CreatePen(border)
+                : null;
+
+            if (radiusPt > 0)
             {
-                gfx.DrawRectangle(CreatePen(style.Border), rect);
+                var ellipseSize = new XSize(radiusPt * 2, radiusPt * 2);
+                if (brush != null && pen != null)
+                {
+                    gfx.DrawRoundedRectangle(pen, brush, rect, ellipseSize);
+                }
+                else if (brush != null)
+                {
+                    gfx.DrawRoundedRectangle(brush, rect, ellipseSize);
+                }
+                else if (pen != null)
+                {
+                    gfx.DrawRoundedRectangle(pen, rect, ellipseSize);
+                }
+            }
+            else
+            {
+                if (brush != null)
+                {
+                    gfx.DrawRectangle(brush, rect);
+                }
+                if (pen != null)
+                {
+                    gfx.DrawRectangle(pen, rect);
+                }
             }
         }
 
@@ -452,8 +597,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 : rect.Height / rows.Count;
             var y = rect.Y;
 
-            foreach (var row in rows)
+            for (var index = 0; index < rows.Count; index++)
             {
+                var row = rows[index];
                 var values = new[]
                 {
                     context.Render(row.Label),
@@ -470,7 +616,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                     columns,
                     values,
                     table,
-                    header: false);
+                    header: false,
+                    titlesOnly: false,
+                    rowIndex: index,
+                    isLastRow: index == rows.Count - 1);
                 y += rowHeight;
             }
         }
@@ -502,7 +651,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                 columns,
                 values,
                 table,
-                header: true);
+                header: true,
+                titlesOnly: false,
+                rowIndex: 0,
+                isLastRow: true);
         }
 
         private static void DrawCollection(
@@ -525,6 +677,7 @@ namespace BtwDocumentDesigner.Application.Rendering
                 rowHeight = MmToPt(8);
             }
 
+            var records = context.Collection(table.Content.DataPath);
             DrawTableRow(
                 gfx,
                 rect.X,
@@ -534,9 +687,9 @@ namespace BtwDocumentDesigner.Application.Rendering
                 table.Columns.Select(column => column.Title ?? string.Empty).ToArray(),
                 table,
                 header: true,
-                titlesOnly: true);
-
-            var records = context.Collection(table.Content.DataPath);
+                titlesOnly: true,
+                rowIndex: 0,
+                isLastRow: records.Count == 0);
             var alias = table.Content.RowAlias ?? "Row";
             var y = rect.Y + headerHeight;
             for (var index = 0; index < records.Count; index++)
@@ -568,7 +721,10 @@ namespace BtwDocumentDesigner.Application.Rendering
                     columns,
                     values,
                     table,
-                    header: false);
+                    header: false,
+                    titlesOnly: false,
+                    rowIndex: index,
+                    isLastRow: index == records.Count - 1);
                 y += rowHeight;
             }
 
@@ -594,47 +750,115 @@ namespace BtwDocumentDesigner.Application.Rendering
             IReadOnlyList<string> values,
             PdfComponent table,
             bool header,
-            bool titlesOnly = false)
+            bool titlesOnly = false,
+            int rowIndex = 0,
+            bool isLastRow = false)
         {
+            var borderPreset = table.Style.BorderPreset ?? "all";
+            var hasBorder = table.Style.Border.Style != "none" && borderPreset != "none";
+            var pen = hasBorder ? CreatePen(table.Style.Border) : null;
+            var cellPadding = MmToPt(table.Style.CellPaddingMm > 0 ? table.Style.CellPaddingMm : (table.Style.Padding > 0 ? table.Style.Padding : 0.8));
+
+            var startX = x;
+            var totalRowWidth = widths.Sum();
+
             for (var index = 0; index < widths.Count; index++)
             {
                 var cell = new XRect(x, y, widths[index], height);
                 var cellState = gfx.Save();
                 gfx.IntersectClip(cell);
                 var column = table.Columns.ElementAtOrDefault(index);
-                var background = header
-                    ? table.Style.Header.Background
-                    : column?.Style.Background;
-                if (!string.IsNullOrWhiteSpace(background))
+
+                // Background calculation: Header (column specific or table header), Alternate row or Column/Default background
+                string? background = null;
+                if (header)
                 {
-                    gfx.DrawRectangle(
-                        new XSolidBrush(ParseColor(background)),
-                        cell);
+                    background = !string.IsNullOrWhiteSpace(column?.HeaderBackground)
+                        ? column.HeaderBackground
+                        : (!string.IsNullOrWhiteSpace(table.Style.Header.Background)
+                            ? table.Style.Header.Background
+                            : (!string.IsNullOrWhiteSpace(table.Style.Background) ? table.Style.Background : "#f3f4f6"));
+                }
+                else if (rowIndex % 2 == 1 && !string.IsNullOrWhiteSpace(table.Style.AlternateRowBackground))
+                {
+                    background = table.Style.AlternateRowBackground;
+                }
+                else
+                {
+                    background = column?.Style.Background ?? table.Style.Background;
                 }
 
-                if (table.Style.Border.Style != "none")
+                if (!string.IsNullOrWhiteSpace(background))
                 {
-                    gfx.DrawRectangle(CreatePen(table.Style.Border), cell);
+                    gfx.DrawRectangle(new XSolidBrush(ParseColor(background)), cell);
+                }
+
+                // Cell borders according to TableBorderPreset
+                if (pen != null)
+                {
+                    switch (borderPreset)
+                    {
+                        case "all":
+                            gfx.DrawRectangle(pen, cell);
+                            break;
+                        case "horizontal":
+                            // Top border on header or middle rows
+                            gfx.DrawLine(pen, cell.X, cell.Y, cell.Right, cell.Y);
+                            // Bottom border on every row
+                            gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            break;
+                        case "vertical":
+                            gfx.DrawLine(pen, cell.X, cell.Y, cell.X, cell.Bottom);
+                            if (index == widths.Count - 1)
+                            {
+                                gfx.DrawLine(pen, cell.Right, cell.Y, cell.Right, cell.Bottom);
+                            }
+                            break;
+                        case "outer":
+                            if (header || rowIndex == 0) gfx.DrawLine(pen, cell.X, cell.Y, cell.Right, cell.Y);
+                            if (isLastRow) gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            if (index == 0) gfx.DrawLine(pen, cell.X, cell.Y, cell.X, cell.Bottom);
+                            if (index == widths.Count - 1) gfx.DrawLine(pen, cell.Right, cell.Y, cell.Right, cell.Bottom);
+                            break;
+                        case "headerOnly":
+                            if (header)
+                            {
+                                gfx.DrawLine(pen, cell.X, cell.Bottom, cell.Right, cell.Bottom);
+                            }
+                            break;
+                    }
                 }
 
                 if (header && !titlesOnly)
                 {
                     var titleRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + MmToPt(0.4),
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         cell.Height * 0.48 - MmToPt(0.2));
+                    
+                    var colHeaderStyle = new ComponentStyle
+                    {
+                        FontFamily = table.Style.FontFamily,
+                        FontSizePt = column?.HeaderFontSizePt ?? table.Style.FontSizePt,
+                        Bold = column?.HeaderBold ?? true,
+                        Italic = column?.HeaderItalic ?? false,
+                        Color = column?.HeaderColor ?? table.Style.Color,
+                        Alignment = column?.HeaderAlignment ?? "center"
+                    };
+
                     DrawTextInRect(
                         gfx,
                         column?.Title ?? string.Empty,
                         titleRect,
-                        table.Style,
-                        forceBold: true,
-                        forceAlignment: "center");
+                        colHeaderStyle,
+                        forceBold: colHeaderStyle.Bold,
+                        forceAlignment: colHeaderStyle.Alignment);
+
                     var valueRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + cell.Height * 0.42,
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         cell.Height * 0.54 - MmToPt(0.2));
                     DrawTextInRect(
                         gfx,
@@ -647,25 +871,45 @@ namespace BtwDocumentDesigner.Application.Rendering
                 else
                 {
                     var textRect = new XRect(
-                        cell.X + MmToPt(0.6),
+                        cell.X + cellPadding,
                         cell.Y + MmToPt(0.3),
-                        Math.Max(0, cell.Width - MmToPt(1.2)),
+                        Math.Max(0, cell.Width - cellPadding * 2),
                         Math.Max(0, cell.Height - MmToPt(0.6)));
+
+                    var textStyle = table.Style;
+                    bool bold = false;
+                    string? alignment = null;
+
+                    if (header)
+                    {
+                        bold = column?.HeaderBold ?? (table.Style.Header.Bold || true);
+                        alignment = column?.HeaderAlignment ?? table.Style.Header.Alignment;
+                        if (!string.IsNullOrWhiteSpace(column?.HeaderColor) || column?.HeaderFontSizePt > 0 || column?.HeaderItalic == true)
+                        {
+                            textStyle = new ComponentStyle
+                            {
+                                FontFamily = table.Style.FontFamily,
+                                FontSizePt = column?.HeaderFontSizePt ?? table.Style.FontSizePt,
+                                Bold = bold,
+                                Italic = column?.HeaderItalic ?? false,
+                                Color = column?.HeaderColor ?? table.Style.Color,
+                                Alignment = alignment ?? "center"
+                            };
+                        }
+                    }
+                    else
+                    {
+                        bold = column?.Style.Bold == true;
+                        alignment = column?.Alignment ?? column?.Style.Alignment ?? table.Style.Alignment;
+                    }
+
                     DrawTextInRect(
                         gfx,
                         values.ElementAtOrDefault(index) ?? string.Empty,
                         textRect,
-                        table.Style,
-                        forceBold:
-                            header
-                            || table.Style.Header.Bold
-                            || column?.Style.Bold == true,
-                        forceAlignment:
-                            header
-                                ? table.Style.Header.Alignment
-                                : column?.Alignment
-                                    ?? column?.Style.Alignment
-                                    ?? table.Style.Alignment);
+                        textStyle,
+                        forceBold: bold,
+                        forceAlignment: alignment);
                 }
 
                 gfx.Restore(cellState);
@@ -765,21 +1009,22 @@ namespace BtwDocumentDesigner.Application.Rendering
 
         private static XPen CreatePen(ComponentStyle style) =>
             CreatePen(
-                style.Border.WidthPt > 0
+                style.Border != null && style.Border.WidthPt > 0
                     ? style.Border
                     : new BorderStyle
                     {
-                        Color = style.Color,
-                        WidthPt = 0.5,
-                        Style = style.Border.Style
+                        Color = !string.IsNullOrWhiteSpace(style.Border?.Color) ? style.Border.Color : style.Color,
+                        WidthPt = style.Border?.WidthPt > 0 ? style.Border.WidthPt : 0.5,
+                        Style = style.Border?.Style ?? "solid"
                     });
 
-        private static XPen CreatePen(BorderStyle border)
+        private static XPen CreatePen(BorderStyle? border)
         {
+            var safeBorder = border ?? new BorderStyle();
             var pen = new XPen(
-                ParseColor(border.Color),
-                border.WidthPt > 0 ? border.WidthPt : 0.5);
-            pen.DashStyle = border.Style switch
+                ParseColor(safeBorder.Color),
+                safeBorder.WidthPt > 0 ? safeBorder.WidthPt : 0.5);
+            pen.DashStyle = safeBorder.Style switch
             {
                 "dashed" => XDashStyle.Dash,
                 "dotted" => XDashStyle.Dot,

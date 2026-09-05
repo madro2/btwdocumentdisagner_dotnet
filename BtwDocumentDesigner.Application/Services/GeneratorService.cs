@@ -18,5 +18,15 @@ namespace BtwDocumentDesigner.Application.Services
 
             return await _engine.GeneratePdfAsync(design.JsonConfiguration, payload, contentType);
         }
+
+        public async Task<byte[]> GeneratePdfDirectAsync(string jsonConfiguration, string payload, string contentType)
+        {
+            if (string.IsNullOrWhiteSpace(jsonConfiguration))
+            {
+                throw new ArgumentException("La configuración del diseño no puede estar vacía.", nameof(jsonConfiguration));
+            }
+
+            return await _engine.GeneratePdfAsync(jsonConfiguration, payload, contentType);
+        }
     }
 }

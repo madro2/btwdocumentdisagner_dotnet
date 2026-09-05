@@ -61,8 +61,19 @@ namespace BtwDocumentDesigner.Api.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _designService.DeleteDesignAsync(id);
-            return deleted ? NoContent() : NotFound("Diseño no encontrado.");
+            try
+            {
+                var deleted = await _designService.DeleteDesignAsync(id);
+                return deleted ? NoContent() : NotFound("Diseño no encontrado.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error eliminando el diseño: {ex.Message}");
+            }
         }
     }
 }
